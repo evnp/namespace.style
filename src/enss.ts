@@ -1,3 +1,19 @@
+export type ENSS<NameEnum, ElementEnum, ConditionalEnum> = {
+  [key in keyof NameEnum]: ENSSFunc<ElementEnum, ConditionalEnum>;
+} & ENSSFunc<ElementEnum, ConditionalEnum>;
+
+export type ENSSFunc<ElementEnum, ConditionalEnum> = {
+  [key in keyof ElementEnum]: ENSSElementFunc<ConditionalEnum>;
+} & ENSSElementFunc<ConditionalEnum>;
+
+export type ENSSElementFunc<ConditionalEnum> = {
+  [key in keyof ConditionalEnum]: ENSSConditionalFunc<ConditionalEnum>;
+} & ((...classes: ENSSArg<ConditionalEnum>[]) => string) & { s: string };
+
+export type ENSSConditionalFunc<ConditionalKey> = ((
+  on?: unknown
+) => ConditionalKey) & { s: string };
+
 export type ENSSArg<T> =
   | null
   | undefined
@@ -5,32 +21,11 @@ export type ENSSArg<T> =
   | T
   | Record<keyof T, boolean>;
 
-export type ENSSFunc<ConditionalEnum> = { s: string } & Record<
-  keyof ConditionalEnum,
-  ENSSConditionalFunc<ConditionalEnum>
-> &
-  ((...classes: ENSSArg<ConditionalEnum>[]) => string);
-
-export type ENSSConditionalFunc<ConditionalKey> = { s: string } & ((
-  on?: unknown
-) => ConditionalKey);
-
-export type ENSS<NameEnum, ElementEnum, ConditionalEnum> =
-  ENSSFunc<ConditionalEnum> &
-    Record<keyof ElementEnum, ENSSFunc<ConditionalEnum>> &
-    Record<keyof ConditionalEnum, ENSSConditionalFunc<ConditionalEnum>> &
-    Record<
-      keyof NameEnum,
-      ENSSFunc<ConditionalEnum> &
-        Record<keyof ElementEnum, ENSSFunc<ConditionalEnum>> &
-        Record<keyof ConditionalEnum, ENSSConditionalFunc<ConditionalEnum>>
-    >;
-
-export interface ENSSConfig {
+export type ENSSConfig = {
   elementSeparator: string;
   conditionalSeparator: string;
   stringAccessorName: string;
-}
+};
 
 const config: ENSSConfig = {
   elementSeparator: "-",

@@ -1,7 +1,7 @@
 {
   "name": "enss",
   "version": "0.0.3",
-  "description": "A structured, type-safe link between CSS and HTML",
+  "description": "A structured, type-safe link between CSS and HTML.",
   "main": "enss.js",
   "types": "enss.d.ts",
   "files": [
@@ -11,8 +11,8 @@
   "scripts": {
     "build": "tsc",
     "test": "jest",
-    "lint": "eslint .",
-    "format": "eslint --fix ."
+    "lint": "eslint src/ test/",
+    "format": "eslint --fix src/ test/"
   },
   "repository": {
     "type": "git",
