@@ -16,10 +16,12 @@ export declare type ENSSArg<T> = null | undefined | boolean | T | Record<keyof T
 export declare type ENSSConfig = {
     elementSeparator: string;
     conditionalSeparator: string;
-    stringAccessorName: string;
 };
-declare function enss<NameEnum = "", ElementEnum = "", ConditionalEnum = "">(nameEnum: Record<keyof NameEnum, string | number>, elementEnum?: Record<keyof ElementEnum, string | number>, conditionalEnum?: Record<keyof ConditionalEnum, string | number>, classMappings?: Partial<Record<keyof NameEnum | keyof ElementEnum | keyof ConditionalEnum, string>>): ENSS<NameEnum, ElementEnum, ConditionalEnum>;
+declare function enss<NameEnum = "", ElementEnum = "", ConditionalEnum = "">(nameEnum?: null | Record<keyof NameEnum, string | number>, elementEnum?: null | Record<keyof ElementEnum, string | number>, conditionalEnum?: null | Record<keyof ConditionalEnum, string | number>, classMappings?: null | Partial<Record<keyof NameEnum | keyof ElementEnum | keyof ConditionalEnum, string>>): ENSS<NameEnum, ElementEnum, ConditionalEnum>;
 declare namespace enss {
     var configure: (configUpdate: Partial<ENSSConfig>) => void;
 }
 export default enss;
+export declare function normalizeClass<T>(prefix: string, ...values: ENSSArg<T>[]): string;
+export declare function omitEnumReverseMappings<T>(enumObj: T): T;
+export declare function extractNameEnumData(nameEnum?: null | Record<string, string | number | null>, classMappings?: null | Record<string, string>): [string | null, string | null];

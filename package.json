@@ -1,6 +1,6 @@
 {
   "name": "enss",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "A structured, type-safe link between CSS and HTML.",
   "main": "enss.js",
   "types": "enss.d.ts",

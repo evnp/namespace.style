@@ -9,46 +9,20 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 exports.__esModule = true;
+exports.extractNameEnumData = exports.omitEnumReverseMappings = exports.normalizeClass = void 0;
 var config = {
     elementSeparator: "-",
-    conditionalSeparator: "--",
-    stringAccessorName: "s"
+    conditionalSeparator: "--"
 };
 function enss(nameEnum, elementEnum, conditionalEnum, classMappings) {
-    var _a;
-    var elemSep = config.elementSeparator;
-    var condSep = config.conditionalSeparator;
+    var elemSep = function () { return config.elementSeparator; };
+    var condSep = function () { return config.conditionalSeparator; };
     nameEnum = omitEnumReverseMappings(nameEnum);
     elementEnum = omitEnumReverseMappings(elementEnum);
     conditionalEnum = omitEnumReverseMappings(conditionalEnum);
-    // Extract base name (required) and base class (optional):
-    var baseName = null;
-    var baseCls = null;
-    if (nameEnum && typeof nameEnum === "object") {
-        var entries = Object.entries(nameEnum);
-        if (entries.length > 1) {
-            throw new Error("ENSS Error: Invalid base name provided; enum should have at most 1 field.");
-        }
-        else if (entries.length === 1) {
-            _a = entries[0], baseName = _a[0], baseCls = _a[1];
-            // handle numeric enum where keys map to arbitrary integers:
-            if (typeof baseCls !== "string") {
-                baseCls === null;
-            }
-            // handle string enum where keys map to equivalent value:
-            if (baseName === baseCls) {
-                baseCls === null;
-            }
-        }
-    }
+    var _a = extractNameEnumData(nameEnum, classMappings), baseName = _a[0], baseCls = _a[1];
     if (classMappings && typeof classMappings === "object") {
         var mappings_1 = new Map(Object.entries(classMappings));
-        if (baseName) {
-            var mappedBaseCls = mappings_1.get(baseName);
-            if (mappedBaseCls) {
-                baseCls = (baseCls ? baseCls + " " : "") + mappedBaseCls;
-            }
-        }
         elementEnum = Object.fromEntries(Object.entries(elementEnum !== null && elementEnum !== void 0 ? elementEnum : {}).map(function (_a) {
             var elemName = _a[0], elemCls = _a[1];
             var mappedCls = mappings_1.get(elemName);
@@ -81,7 +55,7 @@ function enss(nameEnum, elementEnum, conditionalEnum, classMappings) {
             var _a;
             if (baseName && typeof cls === "string") {
                 var scls = cls;
-                var baseCondClsPrefix = baseName + " " + baseName + condSep;
+                var baseCondClsPrefix = baseName + " " + baseName + condSep();
                 if ((_a = scls.startsWith) === null || _a === void 0 ? void 0 : _a.call(scls, baseCondClsPrefix)) {
                     return scls === null || scls === void 0 ? void 0 : scls.slice(baseCondClsPrefix.length);
                 }
@@ -130,7 +104,7 @@ function enss(nameEnum, elementEnum, conditionalEnum, classMappings) {
     }
     var elemClsBuilders = Object.fromEntries(Object.entries(elementEnum !== null && elementEnum !== void 0 ? elementEnum : {}).map(function (_a) {
         var elemName = _a[0], elemCls = _a[1];
-        var elemBaseCls = (baseName ? baseName + elemSep : "") + elemName;
+        var elemBaseCls = (baseName ? baseName + elemSep() : "") + elemName;
         function builder() {
             var classes = [];
             for (var _i = 0; _i < arguments.length; _i++) {
@@ -138,7 +112,7 @@ function enss(nameEnum, elementEnum, conditionalEnum, classMappings) {
             }
             var res = elemBaseCls;
             if (classes.length) {
-                var normalized = normalizeClass.apply(void 0, __spreadArray([res + condSep], unprefix(classes), false));
+                var normalized = normalizeClass.apply(void 0, __spreadArray([res + condSep()], unprefix(classes), false));
                 if (normalized.length) {
                     res += " " + normalized;
                 }
@@ -152,7 +126,7 @@ function enss(nameEnum, elementEnum, conditionalEnum, classMappings) {
         if (elemCls && elemCls !== elemName) {
             builder.s += " " + elemCls;
         }
-        Object.assign(builder, makeCondClassBuilders(elemBaseCls, elemBaseCls + condSep, elemCls && elemCls !== elemName ? elemCls : null));
+        Object.assign(builder, makeCondClassBuilders(elemBaseCls, elemBaseCls + condSep(), elemCls && elemCls !== elemName ? elemCls : null));
         return [elemName, builder];
     }));
     // Create top-level ENSS object (en):
@@ -163,7 +137,7 @@ function enss(nameEnum, elementEnum, conditionalEnum, classMappings) {
         }
         var res = baseName !== null && baseName !== void 0 ? baseName : "";
         if (classes.length) {
-            var normalized = normalizeClass.apply(void 0, __spreadArray([res + condSep], unprefix(classes), false));
+            var normalized = normalizeClass.apply(void 0, __spreadArray([res + condSep()], unprefix(classes), false));
             if (normalized.length) {
                 res += " " + normalized;
             }
@@ -193,13 +167,10 @@ function enss(nameEnum, elementEnum, conditionalEnum, classMappings) {
     Object.assign(mainClsBuilder, elemClsBuilders);
     // Set en.condA, en.condB, etc:
     // eg. en.part.s
-    Object.assign(mainClsBuilder, makeCondClassBuilders(baseName, baseName ? baseName + condSep : "", baseCls));
+    Object.assign(mainClsBuilder, makeCondClassBuilders(baseName, baseName ? baseName + condSep() : "", baseCls));
     return mainClsBuilder;
 }
 exports["default"] = enss;
-// Loosely based on Vue 3's normalizeClass util:
-// github.com/vuejs/vue-next/blob/master/packages/shared/src/normalizeProp.ts
-//
 function normalizeClass(prefix) {
     var values = [];
     for (var _i = 1; _i < arguments.length; _i++) {
@@ -214,8 +185,8 @@ function normalizeClass(prefix) {
                 res += prefix + val + " ";
             }
             else if (Array.isArray(val)) {
-                throw new Error("ENSS Error: Spread arrays instead of passing directly" +
-                    "\neg. cc.mycls(...myarr) instead of cc.mycls(myarr)");
+                throw new Error("ENSS Error: Spread arrays instead of passing directly," +
+                    " eg. cc.mycls(...myarr) instead of cc.mycls(myarr)");
             }
             else {
                 var entries = void 0;
@@ -229,9 +200,9 @@ function normalizeClass(prefix) {
                     throw new Error("ENSS Error: Invalid input ".concat(JSON.stringify(val), "."));
                 }
                 for (var _b = 0, entries_1 = entries; _b < entries_1.length; _b++) {
-                    var _c = entries_1[_b], name = _c[0], on = _c[1];
+                    var _c = entries_1[_b], name_1 = _c[0], on = _c[1];
                     if (on) {
-                        res += prefix + name + " ";
+                        res += prefix + name_1 + " ";
                     }
                 }
             }
@@ -239,6 +210,7 @@ function normalizeClass(prefix) {
     }
     return res.trim();
 }
+exports.normalizeClass = normalizeClass;
 function omitEnumReverseMappings(enumObj) {
     return !enumObj
         ? enumObj
@@ -255,6 +227,38 @@ function omitEnumReverseMappings(enumObj) {
             ];
         }));
 }
+exports.omitEnumReverseMappings = omitEnumReverseMappings;
+function extractNameEnumData(nameEnum, classMappings) {
+    var _a;
+    var baseName = null;
+    var baseCls = null;
+    if (nameEnum && typeof nameEnum === "object") {
+        var entries = Object.entries(nameEnum);
+        if (entries.length > 1) {
+            throw new Error("ENSS Error: Invalid name enum provided; should have at most 1 field.");
+        }
+        else if (entries.length === 1) {
+            _a = entries[0], baseName = _a[0], baseCls = _a[1];
+            // handle numeric enum where keys map to arbitrary integers:
+            if (typeof baseCls !== "string") {
+                baseCls === null;
+            }
+            // handle string enum where keys map to equivalent value:
+            if (baseName === baseCls) {
+                baseCls === null;
+            }
+        }
+    }
+    if (baseName && classMappings && typeof classMappings === "object") {
+        var mappedBaseCls = Object.prototype.hasOwnProperty.call(classMappings, baseName) &&
+            classMappings[baseName];
+        if (mappedBaseCls) {
+            baseCls = (baseCls ? baseCls + " " : "") + mappedBaseCls;
+        }
+    }
+    return [baseName, baseCls];
+}
+exports.extractNameEnumData = extractNameEnumData;
 enss.configure = function (configUpdate) {
     Object.assign(config, configUpdate);
 };
