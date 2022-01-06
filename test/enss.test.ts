@@ -265,4 +265,75 @@ describe("ENSS", () => {
     expect(en.part.warp(true) /*--*/).toBe("part part--warp ghi jkl");
     expect(en.part.warp(false) /*-*/).toBe("part ghi");
   });
+
+  test("custom configuration", () => {
+    enum Name {
+      Ship = "abc",
+    }
+    enum Elements {
+      engine = "def",
+      part = "ghi",
+    }
+    enum Conditionals {
+      warp = "jkl",
+      adrift = "", // custom classes should be optional
+    }
+
+    enss.configure({
+      elementSeparator: "__",
+      conditionalSeparator: ":::",
+    });
+
+    const en = enss<typeof Name, typeof Elements, typeof Conditionals>(
+      Name,
+      Elements,
+      Conditionals
+    );
+
+    expect(en.s).toBe("Ship abc");
+    expect(en()).toBe("Ship abc");
+
+    expect(en.engine.s).toBe("Ship__engine def");
+    expect(en.engine()).toBe("Ship__engine def");
+
+    expect(en.part.s).toBe("Ship__part ghi");
+    expect(en.part()).toBe("Ship__part ghi");
+
+    expect(en.warp.s /*-----------*/).toBe("Ship Ship:::warp abc jkl");
+    expect(en.warp() /*-----------*/).toBe("Ship Ship:::warp abc jkl");
+    expect(en.warp(true) /*-------*/).toBe("Ship Ship:::warp abc jkl");
+    expect(en.warp(false) /*------*/).toBe("Ship abc");
+
+    expect(en.part.warp.s /*------*/).toBe(
+      "Ship__part Ship__part:::warp ghi jkl"
+    );
+    expect(en.part.warp() /*------*/).toBe(
+      "Ship__part Ship__part:::warp ghi jkl"
+    );
+    expect(en.part.warp(true) /*--*/).toBe(
+      "Ship__part Ship__part:::warp ghi jkl"
+    );
+    expect(en.part.warp(false) /*-*/).toBe("Ship__part ghi");
+
+    expect(en.Ship.s).toBe("Ship abc");
+    expect(en.Ship()).toBe("Ship abc");
+
+    expect(en.Ship.engine.s).toBe("Ship__engine def");
+    expect(en.Ship.engine()).toBe("Ship__engine def");
+
+    expect(en.Ship.part.s).toBe("Ship__part ghi");
+    expect(en.Ship.part()).toBe("Ship__part ghi");
+
+    expect(en.Ship.warp.s /*-----------*/).toBe("Ship Ship:::warp abc jkl");
+    expect(en.Ship.warp() /*-----------*/).toBe("Ship Ship:::warp abc jkl");
+    expect(en.Ship.warp(true) /*-------*/).toBe("Ship Ship:::warp abc jkl");
+    expect(en.Ship.warp(false) /*------*/).toBe("Ship abc");
+
+    expect(en.Ship.part.warp.s).toBe("Ship__part Ship__part:::warp ghi jkl");
+    expect(en.Ship.part.warp()).toBe("Ship__part Ship__part:::warp ghi jkl");
+    expect(en.Ship.part.warp(true)).toBe(
+      "Ship__part Ship__part:::warp ghi jkl"
+    );
+    expect(en.Ship.part.warp(false)).toBe("Ship__part ghi");
+  });
 });

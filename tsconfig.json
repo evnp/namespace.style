@@ -7,7 +7,7 @@
     "esModuleInterop": true,
     "baseUrl": ".",
     "types": ["jest"],
-    "lib": ["esnext"],
+    "lib": ["esnext", "dom"],
     "outDir": "."
   },
   "include": ["src/**/*.ts", "tests/**/*.ts"],

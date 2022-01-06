@@ -24,13 +24,11 @@ export type ENSSArg<T> =
 export type ENSSConfig = {
   elementSeparator: string;
   conditionalSeparator: string;
-  stringAccessorName: string;
 };
 
 const config: ENSSConfig = {
   elementSeparator: "-",
   conditionalSeparator: "--",
-  stringAccessorName: "s",
 };
 
 export default function enss<
@@ -38,52 +36,27 @@ export default function enss<
   ElementEnum = "",
   ConditionalEnum = ""
 >(
-  nameEnum: Record<keyof NameEnum, string | number>,
-  elementEnum?: Record<keyof ElementEnum, string | number>,
-  conditionalEnum?: Record<keyof ConditionalEnum, string | number>,
-  classMappings?: Partial<
+  nameEnum?: null | Record<keyof NameEnum, string | number>,
+  elementEnum?: null | Record<keyof ElementEnum, string | number>,
+  conditionalEnum?: null | Record<keyof ConditionalEnum, string | number>,
+  classMappings?: null | Partial<
     Record<keyof NameEnum | keyof ElementEnum | keyof ConditionalEnum, string>
   >
 ): ENSS<NameEnum, ElementEnum, ConditionalEnum> {
-  const elemSep = config.elementSeparator;
-  const condSep = config.conditionalSeparator;
+  const elemSep = () => config.elementSeparator;
+  const condSep = () => config.conditionalSeparator;
 
   nameEnum = omitEnumReverseMappings(nameEnum);
   elementEnum = omitEnumReverseMappings(elementEnum);
   conditionalEnum = omitEnumReverseMappings(conditionalEnum);
 
-  // Extract base name (required) and base class (optional):
-  let baseName: string | null = null;
-  let baseCls: string | null = null;
-  if (nameEnum && typeof nameEnum === "object") {
-    const entries = Object.entries(nameEnum);
-    if (entries.length > 1) {
-      throw new Error(
-        "ENSS Error: Invalid base name provided; enum should have at most 1 field."
-      );
-    } else if (entries.length === 1) {
-      [[baseName, baseCls]] = entries as [[string, string]];
-      // handle numeric enum where keys map to arbitrary integers:
-      if (typeof baseCls !== "string") {
-        baseCls === null;
-      }
-      // handle string enum where keys map to equivalent value:
-      if (baseName === baseCls) {
-        baseCls === null;
-      }
-    }
-  }
+  const [baseName, baseCls] = extractNameEnumData(
+    nameEnum,
+    classMappings as Record<string, string>
+  );
 
   if (classMappings && typeof classMappings === "object") {
     const mappings = new Map<string, string>(Object.entries(classMappings));
-
-    if (baseName) {
-      const mappedBaseCls = mappings.get(baseName);
-      if (mappedBaseCls) {
-        baseCls = (baseCls ? baseCls + " " : "") + mappedBaseCls;
-      }
-    }
-
     elementEnum = Object.fromEntries(
       Object.entries(elementEnum ?? {}).map(
         ([elemName, elemCls]: [string, unknown]) => {
@@ -121,7 +94,7 @@ export default function enss<
     return classes.map((cls: ENSSArg<ConditionalEnum>) => {
       if (baseName && typeof cls === "string") {
         const scls = cls as unknown as string;
-        const baseCondClsPrefix = baseName + " " + baseName + condSep;
+        const baseCondClsPrefix = baseName + " " + baseName + condSep();
         if (scls.startsWith?.(baseCondClsPrefix)) {
           return scls?.slice(baseCondClsPrefix.length);
         } else if (cls === baseName) {
@@ -179,13 +152,13 @@ export default function enss<
 
   const elemClsBuilders = Object.fromEntries(
     Object.entries(elementEnum ?? {}).map(([elemName, elemCls]) => {
-      const elemBaseCls = (baseName ? baseName + elemSep : "") + elemName;
+      const elemBaseCls = (baseName ? baseName + elemSep() : "") + elemName;
 
       function builder(...classes: ENSSArg<ConditionalEnum>[]) {
         let res = elemBaseCls;
         if (classes.length) {
           const normalized = normalizeClass(
-            res + condSep,
+            res + condSep(),
             ...unprefix(classes)
           );
           if (normalized.length) {
@@ -208,7 +181,7 @@ export default function enss<
         builder,
         makeCondClassBuilders(
           elemBaseCls,
-          elemBaseCls + condSep,
+          elemBaseCls + condSep(),
           elemCls && elemCls !== elemName ? (elemCls as string) : null
         )
       );
@@ -221,7 +194,7 @@ export default function enss<
   function mainClsBuilder(...classes: ENSSArg<ConditionalEnum>[]) {
     let res = baseName ?? "";
     if (classes.length) {
-      const normalized = normalizeClass(res + condSep, ...unprefix(classes));
+      const normalized = normalizeClass(res + condSep(), ...unprefix(classes));
       if (normalized.length) {
         res += " " + normalized;
       }
@@ -258,7 +231,11 @@ export default function enss<
   // eg. en.part.s
   Object.assign(
     mainClsBuilder,
-    makeCondClassBuilders(baseName, baseName ? baseName + condSep : "", baseCls)
+    makeCondClassBuilders(
+      baseName,
+      baseName ? baseName + condSep() : "",
+      baseCls
+    )
   );
 
   return mainClsBuilder as unknown as ENSS<
@@ -268,10 +245,10 @@ export default function enss<
   >;
 }
 
-// Loosely based on Vue 3's normalizeClass util:
-// github.com/vuejs/vue-next/blob/master/packages/shared/src/normalizeProp.ts
-//
-function normalizeClass<T>(prefix: string, ...values: ENSSArg<T>[]): string {
+export function normalizeClass<T>(
+  prefix: string,
+  ...values: ENSSArg<T>[]
+): string {
   let res = "";
   for (const val of values) {
     // filter out null, undefined, false, 0, "":
@@ -280,8 +257,8 @@ function normalizeClass<T>(prefix: string, ...values: ENSSArg<T>[]): string {
         res += prefix + val + " ";
       } else if (Array.isArray(val)) {
         throw new Error(
-          "ENSS Error: Spread arrays instead of passing directly" +
-            "\neg. cc.mycls(...myarr) instead of cc.mycls(myarr)"
+          "ENSS Error: Spread arrays instead of passing directly," +
+            " eg. cc.mycls(...myarr) instead of cc.mycls(myarr)"
         );
       } else {
         let entries;
@@ -304,7 +281,7 @@ function normalizeClass<T>(prefix: string, ...values: ENSSArg<T>[]): string {
   return res.trim();
 }
 
-function omitEnumReverseMappings<T>(enumObj: T): T {
+export function omitEnumReverseMappings<T>(enumObj: T): T {
   return !enumObj
     ? enumObj
     : (Object.fromEntries(
@@ -315,6 +292,44 @@ function omitEnumReverseMappings<T>(enumObj: T): T {
             Number.isInteger(Number(val)) ? null : val,
           ])
       ) as T);
+}
+
+export function extractNameEnumData(
+  nameEnum?: null | Record<string, string | number | null>,
+  classMappings?: null | Record<string, string>
+): [string | null, string | null] {
+  let baseName: string | null = null;
+  let baseCls: string | null = null;
+
+  if (nameEnum && typeof nameEnum === "object") {
+    const entries = Object.entries(nameEnum);
+    if (entries.length > 1) {
+      throw new Error(
+        "ENSS Error: Invalid name enum provided; should have at most 1 field."
+      );
+    } else if (entries.length === 1) {
+      [[baseName, baseCls]] = entries as [[string, string]];
+      // handle numeric enum where keys map to arbitrary integers:
+      if (typeof baseCls !== "string") {
+        baseCls === null;
+      }
+      // handle string enum where keys map to equivalent value:
+      if (baseName === baseCls) {
+        baseCls === null;
+      }
+    }
+  }
+
+  if (baseName && classMappings && typeof classMappings === "object") {
+    const mappedBaseCls =
+      Object.prototype.hasOwnProperty.call(classMappings, baseName) &&
+      classMappings[baseName];
+    if (mappedBaseCls) {
+      baseCls = (baseCls ? baseCls + " " : "") + mappedBaseCls;
+    }
+  }
+
+  return [baseName, baseCls];
 }
 
 enss.configure = function (configUpdate: Partial<ENSSConfig>) {
