@@ -1,48 +1,61 @@
-export type ENSS<NameEnum, ElementEnum, ConditionalEnum> = {
-  [key in keyof NameEnum]: ENSSFunc<ElementEnum, ConditionalEnum>;
-} & ENSSFunc<ElementEnum, ConditionalEnum>;
+export type ENSS<NameEnum, ElemEnum, CondEnum> = {
+  [key in keyof NameEnum]: ENSSFunc<ElemEnum, CondEnum>;
+} & {
+  mapClasses: () => ENSS<NameEnum, ElemEnum, CondEnum>;
+} & ENSSFunc<ElemEnum, CondEnum>;
 
-export type ENSSFunc<ElementEnum, ConditionalEnum> = {
-  [key in keyof ElementEnum]: ENSSElementFunc<ConditionalEnum>;
-} & ENSSElementFunc<ConditionalEnum>;
+export type ENSSFunc<ElemEnum, CondEnum> = {
+  [key in keyof ElemEnum]: ENSSElementFunc<CondEnum>;
+} & ENSSElementFunc<CondEnum>;
 
-export type ENSSElementFunc<ConditionalEnum> = {
-  [key in keyof ConditionalEnum]: ENSSConditionalFunc<ConditionalEnum>;
-} & ((...classes: ENSSArg<ConditionalEnum>[]) => string) & { s: string };
+export type ENSSElementFunc<CondEnum> = {
+  [key in keyof CondEnum]: ENSSConditionalFunc;
+} & ((...classes: ENSSArg[]) => string) & { s: string };
 
-export type ENSSConditionalFunc<ConditionalKey> = ((
-  on?: unknown
-) => ConditionalKey) & { s: string };
+export type ENSSConditionalFunc = ((on?: unknown) => string) & {
+  s: string;
+};
 
-export type ENSSArg<T> =
+export type ENSSArg =
   | null
   | undefined
   | boolean
-  | T
-  | Record<keyof T, boolean>;
+  | string
+  | Record<string, unknown>;
+
+export type ENSSClassRecord<NameEnum, ElemEnum, CondEnum> = Partial<
+  Record<keyof NameEnum | keyof ElemEnum | keyof CondEnum, string>
+>;
 
 export type ENSSConfig = {
   elementSeparator: string;
   conditionalSeparator: string;
+  strictBoolChecks: boolean;
 };
 
-const config: ENSSConfig = {
+const defaultConfig: ENSSConfig = {
   elementSeparator: "-",
   conditionalSeparator: "--",
+  strictBoolChecks: true,
 };
 
+const config = { ...defaultConfig };
+
 export default function enss<
-  NameEnum = "",
-  ElementEnum = "",
-  ConditionalEnum = ""
+  NameEnum = object,
+  ElemEnum = object,
+  CondEnum = object
 >(
   nameEnum?: null | Record<keyof NameEnum, string | number>,
-  elementEnum?: null | Record<keyof ElementEnum, string | number>,
-  conditionalEnum?: null | Record<keyof ConditionalEnum, string | number>,
-  classMappings?: null | Partial<
-    Record<keyof NameEnum | keyof ElementEnum | keyof ConditionalEnum, string>
-  >
-): ENSS<NameEnum, ElementEnum, ConditionalEnum> {
+  elementEnum?: null | Record<keyof ElemEnum, string | number>,
+  conditionalEnum?: null | Record<keyof CondEnum, string | number>,
+  classMappings?:
+    | null
+    | ENSSClassRecord<NameEnum, ElemEnum, CondEnum>
+    | ((
+        classMappings: ENSSClassRecord<NameEnum, ElemEnum, CondEnum>
+      ) => void | ENSSClassRecord<NameEnum, ElemEnum, CondEnum>)
+): ENSS<NameEnum, ElemEnum, CondEnum> {
   const elemSep = () => config.elementSeparator;
   const condSep = () => config.conditionalSeparator;
 
@@ -50,9 +63,14 @@ export default function enss<
   elementEnum = omitEnumReverseMappings(elementEnum);
   conditionalEnum = omitEnumReverseMappings(conditionalEnum);
 
-  const [baseName, baseCls] = extractNameEnumData(
+  if (typeof classMappings === "function") {
+    const classMappingsRet = {};
+    classMappings = classMappings(classMappingsRet) ?? classMappingsRet;
+  }
+
+  const [baseName, baseCls] = extractNameEnumData<NameEnum, ElemEnum, CondEnum>(
     nameEnum,
-    classMappings as Record<string, string>
+    classMappings
   );
 
   if (classMappings && typeof classMappings === "object") {
@@ -90,8 +108,8 @@ export default function enss<
     ) as typeof conditionalEnum;
   }
 
-  function unprefix(classes: ENSSArg<ConditionalEnum>[]) {
-    return classes.map((cls: ENSSArg<ConditionalEnum>) => {
+  function unprefix(classes: ENSSArg[]) {
+    return classes.map((cls: ENSSArg) => {
       if (baseName && typeof cls === "string") {
         const scls = cls as unknown as string;
         const baseCondClsPrefix = baseName + " " + baseName + condSep();
@@ -119,7 +137,11 @@ export default function enss<
           //       so that arguments.length can be correctly inspected;
           //       allows distinction between myCls() and myCls(undefined) calls
           let res = "";
-          if (on || !arguments.length) {
+          if (
+            !arguments.length ||
+            on === true || // only recognize boolean values
+            (!config.strictBoolChecks && on) // unless strictBoolChecks=false
+          ) {
             res = (baseClass ? baseClass + " " : "") + condBaseCls;
             if (appendClass) {
               res += " " + appendClass;
@@ -154,10 +176,11 @@ export default function enss<
     Object.entries(elementEnum ?? {}).map(([elemName, elemCls]) => {
       const elemBaseCls = (baseName ? baseName + elemSep() : "") + elemName;
 
-      function builder(...classes: ENSSArg<ConditionalEnum>[]) {
+      function builder(...classes: ENSSArg[]) {
         let res = elemBaseCls;
         if (classes.length) {
           const normalized = normalizeClass(
+            config,
             res + condSep(),
             ...unprefix(classes)
           );
@@ -191,10 +214,14 @@ export default function enss<
   );
 
   // Create top-level ENSS object (en):
-  function mainClsBuilder(...classes: ENSSArg<ConditionalEnum>[]) {
+  function mainClsBuilder(...classes: ENSSArg[]) {
     let res = baseName ?? "";
     if (classes.length) {
-      const normalized = normalizeClass(res + condSep(), ...unprefix(classes));
+      const normalized = normalizeClass(
+        config,
+        res + condSep(),
+        ...unprefix(classes)
+      );
       if (normalized.length) {
         res += " " + normalized;
       }
@@ -238,16 +265,13 @@ export default function enss<
     )
   );
 
-  return mainClsBuilder as unknown as ENSS<
-    NameEnum,
-    ElementEnum,
-    ConditionalEnum
-  >;
+  return mainClsBuilder as unknown as ENSS<NameEnum, ElemEnum, CondEnum>;
 }
 
-export function normalizeClass<T>(
+export function normalizeClass(
+  config: Partial<ENSSConfig>,
   prefix: string,
-  ...values: ENSSArg<T>[]
+  ...values: ENSSArg[]
 ): string {
   let res = "";
   for (const val of values) {
@@ -271,9 +295,18 @@ export function normalizeClass<T>(
           throw new Error(`ENSS Error: Invalid input ${JSON.stringify(val)}.`);
         }
         for (const [name, on] of entries) {
-          if (on) {
+          if (
+            on === true || // only recognize boolean values
+            (!config.strictBoolChecks && on) // unless strictBoolChecks=false
+          ) {
             res += prefix + name + " ";
           }
+          // Ignore classes associated with all other `on` values, even those
+          // that are "truthy". This allows easily passing props objects into
+          // enss where boolean props are meant to be used as classes, but
+          // all other props should be ignored.
+          // If "truthiness" checks are desired, input must simply be cast to
+          // bool first, eg. en({ myclass: !!myprop })
         }
       }
     }
@@ -294,9 +327,9 @@ export function omitEnumReverseMappings<T>(enumObj: T): T {
       ) as T);
 }
 
-export function extractNameEnumData(
+export function extractNameEnumData<NameEnum, ElemEnum, CondEnum>(
   nameEnum?: null | Record<string, string | number | null>,
-  classMappings?: null | Record<string, string>
+  classMappings?: null | ENSSClassRecord<NameEnum, ElemEnum, CondEnum>
 ): [string | null, string | null] {
   let baseName: string | null = null;
   let baseCls: string | null = null;
@@ -323,7 +356,7 @@ export function extractNameEnumData(
   if (baseName && classMappings && typeof classMappings === "object") {
     const mappedBaseCls =
       Object.prototype.hasOwnProperty.call(classMappings, baseName) &&
-      classMappings[baseName];
+      classMappings[baseName as keyof NameEnum];
     if (mappedBaseCls) {
       baseCls = (baseCls ? baseCls + " " : "") + mappedBaseCls;
     }
@@ -332,6 +365,6 @@ export function extractNameEnumData(
   return [baseName, baseCls];
 }
 
-enss.configure = function (configUpdate: Partial<ENSSConfig>) {
-  Object.assign(config, configUpdate);
+enss.configure = function (configUpdate: null | Partial<ENSSConfig>) {
+  Object.assign(config, configUpdate === null ? defaultConfig : configUpdate);
 };

@@ -1,4 +1,15 @@
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
         if (ar || !(i in from)) {
@@ -10,17 +21,24 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 };
 exports.__esModule = true;
 exports.extractNameEnumData = exports.omitEnumReverseMappings = exports.normalizeClass = void 0;
-var config = {
+var defaultConfig = {
     elementSeparator: "-",
-    conditionalSeparator: "--"
+    conditionalSeparator: "--",
+    strictBoolChecks: true
 };
+var config = __assign({}, defaultConfig);
 function enss(nameEnum, elementEnum, conditionalEnum, classMappings) {
+    var _a;
     var elemSep = function () { return config.elementSeparator; };
     var condSep = function () { return config.conditionalSeparator; };
     nameEnum = omitEnumReverseMappings(nameEnum);
     elementEnum = omitEnumReverseMappings(elementEnum);
     conditionalEnum = omitEnumReverseMappings(conditionalEnum);
-    var _a = extractNameEnumData(nameEnum, classMappings), baseName = _a[0], baseCls = _a[1];
+    if (typeof classMappings === "function") {
+        var classMappingsRet = {};
+        classMappings = (_a = classMappings(classMappingsRet)) !== null && _a !== void 0 ? _a : classMappingsRet;
+    }
+    var _b = extractNameEnumData(nameEnum, classMappings), baseName = _b[0], baseCls = _b[1];
     if (classMappings && typeof classMappings === "object") {
         var mappings_1 = new Map(Object.entries(classMappings));
         elementEnum = Object.fromEntries(Object.entries(elementEnum !== null && elementEnum !== void 0 ? elementEnum : {}).map(function (_a) {
@@ -75,7 +93,10 @@ function enss(nameEnum, elementEnum, conditionalEnum, classMappings) {
                 //       so that arguments.length can be correctly inspected;
                 //       allows distinction between myCls() and myCls(undefined) calls
                 var res = "";
-                if (on || !arguments.length) {
+                if (!arguments.length ||
+                    on === true || // only recognize boolean values
+                    (!config.strictBoolChecks && on) // unless strictBoolChecks=false
+                ) {
                     res = (baseClass ? baseClass + " " : "") + condBaseCls;
                     if (appendClass) {
                         res += " " + appendClass;
@@ -112,7 +133,8 @@ function enss(nameEnum, elementEnum, conditionalEnum, classMappings) {
             }
             var res = elemBaseCls;
             if (classes.length) {
-                var normalized = normalizeClass.apply(void 0, __spreadArray([res + condSep()], unprefix(classes), false));
+                var normalized = normalizeClass.apply(void 0, __spreadArray([config,
+                    res + condSep()], unprefix(classes), false));
                 if (normalized.length) {
                     res += " " + normalized;
                 }
@@ -137,7 +159,8 @@ function enss(nameEnum, elementEnum, conditionalEnum, classMappings) {
         }
         var res = baseName !== null && baseName !== void 0 ? baseName : "";
         if (classes.length) {
-            var normalized = normalizeClass.apply(void 0, __spreadArray([res + condSep()], unprefix(classes), false));
+            var normalized = normalizeClass.apply(void 0, __spreadArray([config,
+                res + condSep()], unprefix(classes), false));
             if (normalized.length) {
                 res += " " + normalized;
             }
@@ -171,10 +194,10 @@ function enss(nameEnum, elementEnum, conditionalEnum, classMappings) {
     return mainClsBuilder;
 }
 exports["default"] = enss;
-function normalizeClass(prefix) {
+function normalizeClass(config, prefix) {
     var values = [];
-    for (var _i = 1; _i < arguments.length; _i++) {
-        values[_i - 1] = arguments[_i];
+    for (var _i = 2; _i < arguments.length; _i++) {
+        values[_i - 2] = arguments[_i];
     }
     var res = "";
     for (var _a = 0, values_1 = values; _a < values_1.length; _a++) {
@@ -201,9 +224,17 @@ function normalizeClass(prefix) {
                 }
                 for (var _b = 0, entries_1 = entries; _b < entries_1.length; _b++) {
                     var _c = entries_1[_b], name_1 = _c[0], on = _c[1];
-                    if (on) {
+                    if (on === true || // only recognize boolean values
+                        (!config.strictBoolChecks && on) // unless strictBoolChecks=false
+                    ) {
                         res += prefix + name_1 + " ";
                     }
+                    // Ignore classes associated with all other `on` values, even those
+                    // that are "truthy". This allows easily passing props objects into
+                    // enss where boolean props are meant to be used as classes, but
+                    // all other props should be ignored.
+                    // If "truthiness" checks are desired, input must simply be cast to
+                    // bool first, eg. en({ myclass: !!myprop })
                 }
             }
         }
@@ -260,5 +291,5 @@ function extractNameEnumData(nameEnum, classMappings) {
 }
 exports.extractNameEnumData = extractNameEnumData;
 enss.configure = function (configUpdate) {
-    Object.assign(config, configUpdate);
+    Object.assign(config, configUpdate === null ? defaultConfig : configUpdate);
 };
