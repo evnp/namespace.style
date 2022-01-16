@@ -9,10 +9,10 @@ export type ENSSFunc<ElemEnum, CondEnum> = {
 } & ENSSElementFunc<CondEnum>;
 
 export type ENSSElementFunc<CondEnum> = {
-  [key in keyof CondEnum]: ENSSConditionalFunc;
+  [key in keyof CondEnum]: ENSSCondFunc;
 } & ((...classes: ENSSArg[]) => string) & { s: string };
 
-export type ENSSConditionalFunc = ((on?: unknown) => string) & {
+export type ENSSCondFunc = ((on?: unknown) => string) & {
   s: string;
 };
 
@@ -47,8 +47,8 @@ export default function enss<
   CondEnum = object
 >(
   nameEnum?: null | Record<keyof NameEnum, string | number>,
-  elementEnum?: null | Record<keyof ElemEnum, string | number>,
-  conditionalEnum?: null | Record<keyof CondEnum, string | number>,
+  elemEnum?: null | Record<keyof ElemEnum, string | number>,
+  condEnum?: null | Record<keyof CondEnum, string | number>,
   classMappings?:
     | null
     | ENSSClassRecord<NameEnum, ElemEnum, CondEnum>
@@ -60,8 +60,8 @@ export default function enss<
   const condSep = () => config.conditionalSeparator;
 
   nameEnum = omitEnumReverseMappings(nameEnum);
-  elementEnum = omitEnumReverseMappings(elementEnum);
-  conditionalEnum = omitEnumReverseMappings(conditionalEnum);
+  elemEnum = omitEnumReverseMappings(elemEnum);
+  condEnum = omitEnumReverseMappings(condEnum);
 
   if (typeof classMappings === "function") {
     const classMappingsRet = {};
@@ -73,50 +73,83 @@ export default function enss<
     classMappings
   );
 
-  if (classMappings && typeof classMappings === "object") {
-    const mappings = new Map<string, string>(Object.entries(classMappings));
-    elementEnum = Object.fromEntries(
-      Object.entries(elementEnum ?? {}).map(
-        ([elemName, elemCls]: [string, unknown]) => {
-          const mappedCls = mappings.get(elemName);
-          if (mappedCls) {
-            if (!elemCls || elemCls === elemName) {
-              return [elemName, mappedCls];
-            } else {
-              return [elemName, elemCls + " " + mappedCls];
-            }
+  // Cross-pollinate class mappings between enums and auxilliary mapping object:
+  const mapEntries = Object.entries(classMappings ?? []);
+  const mappings = new Map(mapEntries);
+  elemEnum = Object.fromEntries(
+    Object.entries(elemEnum ?? {}).map(
+      ([elemName, elemCls]: [string, unknown]) => {
+        const mappedCls = mappings.get(elemName);
+        if (mappedCls) {
+          if (!elemCls || elemCls === elemName) {
+            return [elemName, mappedCls];
+          } else {
+            return [elemName, elemCls + " " + mappedCls];
           }
-          return [elemName, elemCls];
+        } else if (typeof elemCls === "string" && elemCls.length) {
+          mappings.set(elemName, elemCls);
         }
-      )
-    ) as typeof elementEnum;
-
-    conditionalEnum = Object.fromEntries(
-      Object.entries(conditionalEnum ?? {}).map(
-        ([condName, condCls]: [string, unknown]) => {
-          const mappedCls = mappings.get(condName);
-          if (mappedCls) {
-            if (!condCls || condCls === condName) {
-              return [condName, mappedCls];
-            } else {
-              return [condName, condCls + " " + mappedCls];
-            }
+        return [elemName, elemCls];
+      }
+    )
+  ) as typeof elemEnum;
+  condEnum = Object.fromEntries(
+    Object.entries(condEnum ?? {}).map(
+      ([condName, condCls]: [string, unknown]) => {
+        const mappedCls = mappings.get(condName);
+        if (mappedCls) {
+          if (!condCls || condCls === condName) {
+            return [condName, mappedCls];
+          } else {
+            return [condName, condCls + " " + mappedCls];
           }
-          return [condName, condCls];
+        } else if (typeof condCls === "string" && condCls.length) {
+          mappings.set(condName, condCls);
         }
-      )
-    ) as typeof conditionalEnum;
-  }
+        return [condName, condCls];
+      }
+    )
+  ) as typeof condEnum;
 
-  function unprefix(classes: ENSSArg[]) {
+  function unprefix(classes: ENSSArg[]): ENSSArg[] {
     return classes.map((cls: ENSSArg) => {
       if (baseName && typeof cls === "string") {
         const scls = cls as unknown as string;
-        const baseCondClsPrefix = baseName + " " + baseName + condSep();
-        if (scls.startsWith?.(baseCondClsPrefix)) {
-          return scls?.slice(baseCondClsPrefix.length);
-        } else if (cls === baseName) {
+        const condClsPrefix = baseName + " " + baseName + condSep();
+        if (scls.startsWith?.(condClsPrefix)) {
+          return scls?.slice(condClsPrefix.length);
+        } else if (cls === baseName || cls === baseName + " " + baseCls) {
           return null;
+        }
+      }
+      return cls;
+    });
+  }
+
+  const mapKeyRegex = new RegExp(
+    "^(" + Array.from(mappings.keys()).join("|") + ")"
+  );
+  const mapValRegex = new RegExp(
+    "(" + Array.from(mappings.values()).join("|") + ")$"
+  );
+
+  function unmap(classes: ENSSArg[]): ENSSArg[] {
+    return classes.map((cls: ENSSArg) => {
+      if (typeof cls === "string") {
+        let keyMatch;
+        let valMatch;
+        while (
+          (keyMatch = cls.match(mapKeyRegex)) &&
+          (valMatch = cls.match(mapValRegex))
+        ) {
+          if (mappings.get(keyMatch[1]) === valMatch[1]) {
+            cls = cls.slice(0, cls.length - valMatch[1].length - 1);
+          } else {
+            break;
+          }
+        }
+        if (baseCls && cls.endsWith(baseCls)) {
+          cls = cls.slice(0, cls.length - baseCls.length - 1);
         }
       }
       return cls;
@@ -129,7 +162,7 @@ export default function enss<
     appendClass: string | null
   ) {
     return Object.fromEntries(
-      Object.entries(conditionalEnum ?? {}).map(([condName, condCls]) => {
+      Object.entries(condEnum ?? {}).map(([condName, condCls]) => {
         const condBaseCls = condClassPrefix + condName;
 
         function builder(on?: unknown) {
@@ -173,16 +206,19 @@ export default function enss<
   }
 
   const elemClsBuilders = Object.fromEntries(
-    Object.entries(elementEnum ?? {}).map(([elemName, elemCls]) => {
+    Object.entries(elemEnum ?? {}).map(([elemName, elemCls]) => {
       const elemBaseCls = (baseName ? baseName + elemSep() : "") + elemName;
 
       function builder(...classes: ENSSArg[]) {
         let res = elemBaseCls;
+        let normalized = "";
+        let mapped = "";
         if (classes.length) {
-          const normalized = normalizeClass(
+          [normalized, mapped] = normalizeClass(
             config,
+            mappings,
             res + condSep(),
-            ...unprefix(classes)
+            ...unmap(unprefix(classes))
           );
           if (normalized.length) {
             res += " " + normalized;
@@ -190,6 +226,9 @@ export default function enss<
         }
         if (elemCls && elemCls !== elemName) {
           res += " " + elemCls;
+        }
+        if (mapped.length) {
+          res += " " + mapped;
         }
         return res;
       }
@@ -216,11 +255,14 @@ export default function enss<
   // Create top-level ENSS object (en):
   function mainClsBuilder(...classes: ENSSArg[]) {
     let res = baseName ?? "";
+    let normalized = "";
+    let mapped = "";
     if (classes.length) {
-      const normalized = normalizeClass(
+      [normalized, mapped] = normalizeClass(
         config,
+        mappings,
         res + condSep(),
-        ...unprefix(classes)
+        ...unmap(unprefix(classes))
       );
       if (normalized.length) {
         res += " " + normalized;
@@ -228,6 +270,9 @@ export default function enss<
     }
     if (baseCls) {
       res += " " + baseCls;
+    }
+    if (mapped.length) {
+      res += " " + mapped;
     }
     return res;
   }
@@ -270,15 +315,25 @@ export default function enss<
 
 export function normalizeClass(
   config: Partial<ENSSConfig>,
+  mappings: null | Map<string, string>,
   prefix: string,
   ...values: ENSSArg[]
-): string {
+): [string, string] {
   let res = "";
+  const mappedClasses: string[] = [];
   for (const val of values) {
     // filter out null, undefined, false, 0, "":
     if (val) {
       if (typeof val === "string" || val instanceof String) {
-        res += prefix + val + " ";
+        res += prefix + val.trim() + " ";
+        const mappedCls = mappings?.get(val as string);
+        if (
+          mappedCls?.length &&
+          (typeof mappedCls === "string" ||
+            (mappedCls as unknown) instanceof String)
+        ) {
+          mappedClasses.push(mappedCls.trim());
+        }
       } else if (Array.isArray(val)) {
         throw new Error(
           "ENSS Error: Spread arrays instead of passing directly," +
@@ -299,7 +354,15 @@ export function normalizeClass(
             on === true || // only recognize boolean values
             (!config.strictBoolChecks && on) // unless strictBoolChecks=false
           ) {
-            res += prefix + name + " ";
+            res += prefix + name.trim() + " ";
+            const mappedCls = mappings?.get(name as string);
+            if (
+              mappedCls?.length &&
+              (typeof mappedCls === "string" ||
+                (mappedCls as unknown) instanceof String)
+            ) {
+              mappedClasses.push(mappedCls.trim());
+            }
           }
           // Ignore classes associated with all other `on` values, even those
           // that are "truthy". This allows easily passing props objects into
@@ -311,7 +374,15 @@ export function normalizeClass(
       }
     }
   }
-  return res.trim();
+  return [
+    res.trim(),
+    mappedClasses.reverse().join(" "),
+    // reverse mappedClasses before joining so that they may be "unmapped" easily
+    // if nessary during class composition later, by comparing "out-to-in", eg.
+    // "elA elB baseMapCls elBMapCls elAMapCls" -> compare elA === elAMapCls ?
+    // "elA elB baseMapCls elBMapCls"           -> compare elB === elBMapCls ?
+    // "elA elB baseMapCls"                     -> class is fully "unmapped"
+  ];
 }
 
 export function omitEnumReverseMappings<T>(enumObj: T): T {

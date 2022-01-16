@@ -115,14 +115,24 @@ describe("ENSS", () => {
   });
 
   test("conditional class composition", () => {
-    const warp = true;
-    const adrift = true;
-
     expect(en(en.warp.s, en.adrift.s)).toBe("Ship Ship--warp Ship--adrift");
     expect(en(en.warp(), en.adrift())).toBe("Ship Ship--warp Ship--adrift");
+
+    expect(en(en.warp(true), en.adrift(true))).toBe(
+      "Ship Ship--warp Ship--adrift"
+    );
     expect(en(en.warp(true), en.adrift(false))).toBe("Ship Ship--warp");
-    expect(en({ warp, adrift })).toBe("Ship Ship--warp Ship--adrift");
-    expect(en({ warp, adrift: false })).toBe("Ship Ship--warp");
+    expect(en(en.warp(false), en.adrift(false))).toBe("Ship");
+    expect(en(en.warp(0), en.adrift("at space"))).toBe("Ship");
+    // all non-bool values ignored unless config.strictBoolChecks=false
+
+    expect(en({ warp: true, adrift: true })).toBe(
+      "Ship Ship--warp Ship--adrift"
+    );
+    expect(en({ warp: true, adrift: false })).toBe("Ship Ship--warp");
+    expect(en({ warp: false, adrift: false })).toBe("Ship");
+    expect(en({ warp: 0, adrift: "at space" })).toBe("Ship");
+    // all non-bool values ignored unless config.strictBoolChecks=false
 
     expect(en.part(en.warp.s, en.adrift.s)).toBe(
       "Ship-part Ship-part--warp Ship-part--adrift"
@@ -130,13 +140,26 @@ describe("ENSS", () => {
     expect(en.part(en.warp(), en.adrift())).toBe(
       "Ship-part Ship-part--warp Ship-part--adrift"
     );
+
+    expect(en.part(en.warp(true), en.adrift(true))).toBe(
+      "Ship-part Ship-part--warp Ship-part--adrift"
+    );
     expect(en.part(en.warp(true), en.adrift(false))).toBe(
       "Ship-part Ship-part--warp"
     );
-    expect(en.part({ warp, adrift })).toBe(
+    expect(en.part(en.warp(false), en.adrift(false))).toBe("Ship-part");
+    expect(en.part(en.warp(0), en.adrift("at space"))).toBe("Ship-part");
+    // all non-bool values ignored unless config.strictBoolChecks=false
+
+    expect(en.part({ warp: true, adrift: true })).toBe(
       "Ship-part Ship-part--warp Ship-part--adrift"
     );
-    expect(en.part({ warp, adrift: false })).toBe("Ship-part Ship-part--warp");
+    expect(en.part({ warp: true, adrift: false })).toBe(
+      "Ship-part Ship-part--warp"
+    );
+    expect(en.part({ warp: false, adrift: false })).toBe("Ship-part");
+    expect(en.part({ warp: 0, adrift: "at space" })).toBe("Ship-part");
+    // all non-bool values ignored unless config.strictBoolChecks=false
   });
 
   test("custom class mappings via enum values", () => {
@@ -192,6 +215,71 @@ describe("ENSS", () => {
     expect(en.Ship.part.warp(false)).toBe("Ship-part ghi");
   });
 
+  test("custom class mappings via enum values with class composition", () => {
+    enum Name {
+      Ship = "abc",
+    }
+    enum Elem {
+      engine = "def",
+      part = "ghi",
+    }
+    enum Cond {
+      warp = "jkl",
+      adrift = "mno",
+    }
+    const en = enss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond);
+
+    expect(en(en.warp.s, en.adrift.s)).toBe(
+      "Ship Ship--warp Ship--adrift abc mno jkl"
+    );
+    expect(en(en.warp(), en.adrift())).toBe(
+      "Ship Ship--warp Ship--adrift abc mno jkl"
+    );
+
+    expect(en(en.warp(true), en.adrift(true))).toBe(
+      "Ship Ship--warp Ship--adrift abc mno jkl"
+    );
+    expect(en(en.warp(true), en.adrift(false))).toBe("Ship Ship--warp abc jkl");
+    expect(en(en.warp(false), en.adrift(false))).toBe("Ship abc");
+    expect(en(en.warp(0), en.adrift("at space"))).toBe("Ship abc");
+    // all non-bool values ignored unless config.strictBoolChecks=false
+
+    expect(en({ warp: true, adrift: true })).toBe(
+      "Ship Ship--warp Ship--adrift abc mno jkl"
+    );
+    expect(en({ warp: true, adrift: false })).toBe("Ship Ship--warp abc jkl");
+    expect(en({ warp: false, adrift: false })).toBe("Ship abc");
+    expect(en({ warp: 0, adrift: "at space" })).toBe("Ship abc");
+    // all non-bool values ignored unless config.strictBoolChecks=false
+
+    expect(en.part(en.warp.s, en.adrift.s)).toBe(
+      "Ship-part Ship-part--warp Ship-part--adrift ghi mno jkl"
+    );
+    expect(en.part(en.warp(), en.adrift())).toBe(
+      "Ship-part Ship-part--warp Ship-part--adrift ghi mno jkl"
+    );
+
+    expect(en.part(en.warp(true), en.adrift(true))).toBe(
+      "Ship-part Ship-part--warp Ship-part--adrift ghi mno jkl"
+    );
+    expect(en.part(en.warp(true), en.adrift(false))).toBe(
+      "Ship-part Ship-part--warp ghi jkl"
+    );
+    expect(en.part(en.warp(false), en.adrift(false))).toBe("Ship-part ghi");
+    expect(en.part(en.warp(0), en.adrift("at space"))).toBe("Ship-part ghi");
+    // all non-bool values ignored unless config.strictBoolChecks=false
+
+    expect(en.part({ warp: true, adrift: true })).toBe(
+      "Ship-part Ship-part--warp Ship-part--adrift ghi mno jkl"
+    );
+    expect(en.part({ warp: true, adrift: false })).toBe(
+      "Ship-part Ship-part--warp ghi jkl"
+    );
+    expect(en.part({ warp: false, adrift: false })).toBe("Ship-part ghi");
+    expect(en.part({ warp: 0, adrift: "at space" })).toBe("Ship-part ghi");
+    // all non-bool values ignored unless config.strictBoolChecks=false
+  });
+
   test("custom class mappings via map object", () => {
     const en = enss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond, {
       Ship: "abc",
@@ -238,6 +326,66 @@ describe("ENSS", () => {
     expect(en.Ship.part.warp()).toBe("Ship-part Ship-part--warp ghi jkl");
     expect(en.Ship.part.warp(true)).toBe("Ship-part Ship-part--warp ghi jkl");
     expect(en.Ship.part.warp(false)).toBe("Ship-part ghi");
+  });
+
+  test("custom class mappings via map object with class composition", () => {
+    const en = enss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond, {
+      Ship: "abc",
+      engine: "def",
+      part: "ghi",
+      warp: "jkl",
+      adrift: "mno",
+    });
+
+    expect(en(en.warp.s, en.adrift.s)).toBe(
+      "Ship Ship--warp Ship--adrift abc mno jkl"
+    );
+    expect(en(en.warp(), en.adrift())).toBe(
+      "Ship Ship--warp Ship--adrift abc mno jkl"
+    );
+
+    expect(en(en.warp(true), en.adrift(true))).toBe(
+      "Ship Ship--warp Ship--adrift abc mno jkl"
+    );
+    expect(en(en.warp(true), en.adrift(false))).toBe("Ship Ship--warp abc jkl");
+    expect(en(en.warp(false), en.adrift(false))).toBe("Ship abc");
+    expect(en(en.warp(0), en.adrift("at space"))).toBe("Ship abc");
+    // all non-bool values ignored unless config.strictBoolChecks=false
+
+    expect(en({ warp: true, adrift: true })).toBe(
+      "Ship Ship--warp Ship--adrift abc mno jkl"
+    );
+    expect(en({ warp: true, adrift: false })).toBe("Ship Ship--warp abc jkl");
+    expect(en({ warp: false, adrift: false })).toBe("Ship abc");
+    expect(en({ warp: 0, adrift: "at space" })).toBe("Ship abc");
+    // all non-bool values ignored unless config.strictBoolChecks=false
+
+    expect(en.part(en.warp.s, en.adrift.s)).toBe(
+      "Ship-part Ship-part--warp Ship-part--adrift ghi mno jkl"
+    );
+    expect(en.part(en.warp(), en.adrift())).toBe(
+      "Ship-part Ship-part--warp Ship-part--adrift ghi mno jkl"
+    );
+
+    expect(en.part(en.warp(true), en.adrift(true))).toBe(
+      "Ship-part Ship-part--warp Ship-part--adrift ghi mno jkl"
+    );
+    expect(en.part(en.warp(true), en.adrift(false))).toBe(
+      "Ship-part Ship-part--warp ghi jkl"
+    );
+    expect(en.part(en.warp(false), en.adrift(false))).toBe("Ship-part ghi");
+    expect(en.part(en.warp(0), en.adrift("at space"))).toBe("Ship-part ghi");
+    // all non-bool values ignored unless config.strictBoolChecks=false
+
+    expect(en.part({ warp: true, adrift: true })).toBe(
+      "Ship-part Ship-part--warp Ship-part--adrift ghi mno jkl"
+    );
+    expect(en.part({ warp: true, adrift: false })).toBe(
+      "Ship-part Ship-part--warp ghi jkl"
+    );
+    expect(en.part({ warp: false, adrift: false })).toBe("Ship-part ghi");
+    expect(en.part({ warp: 0, adrift: "at space" })).toBe("Ship-part ghi");
+    // all non-bool values ignored unless config.strictBoolChecks=false
   });
 
   test("custom class mappings via generator function", () => {
@@ -294,6 +442,74 @@ describe("ENSS", () => {
     expect(en.Ship.part.warp()).toBe("Ship-part Ship-part--warp ghi jkl");
     expect(en.Ship.part.warp(true)).toBe("Ship-part Ship-part--warp ghi jkl");
     expect(en.Ship.part.warp(false)).toBe("Ship-part ghi");
+  });
+
+  test("custom class mappings via generator function with class composition", () => {
+    const en = enss<typeof Name, typeof Elem, typeof Cond>(
+      Name,
+      Elem,
+      Cond,
+      () => {
+        const alphabet = "abcdefghijklmnopqrstuvwxyz";
+        return {
+          Ship: alphabet.slice(0, 3),
+          engine: alphabet.slice(3, 6),
+          part: alphabet.slice(6, 9),
+          warp: alphabet.slice(9, 12),
+          adrift: alphabet.slice(12, 15),
+        };
+      }
+    );
+
+    expect(en(en.warp.s, en.adrift.s)).toBe(
+      "Ship Ship--warp Ship--adrift abc mno jkl"
+    );
+    expect(en(en.warp(), en.adrift())).toBe(
+      "Ship Ship--warp Ship--adrift abc mno jkl"
+    );
+
+    expect(en(en.warp(true), en.adrift(true))).toBe(
+      "Ship Ship--warp Ship--adrift abc mno jkl"
+    );
+    expect(en(en.warp(true), en.adrift(false))).toBe("Ship Ship--warp abc jkl");
+    expect(en(en.warp(false), en.adrift(false))).toBe("Ship abc");
+    expect(en(en.warp(0), en.adrift("at space"))).toBe("Ship abc");
+    // all non-bool values ignored unless config.strictBoolChecks=false
+
+    expect(en({ warp: true, adrift: true })).toBe(
+      "Ship Ship--warp Ship--adrift abc mno jkl"
+    );
+    expect(en({ warp: true, adrift: false })).toBe("Ship Ship--warp abc jkl");
+    expect(en({ warp: false, adrift: false })).toBe("Ship abc");
+    expect(en({ warp: 0, adrift: "at space" })).toBe("Ship abc");
+    // all non-bool values ignored unless config.strictBoolChecks=false
+
+    expect(en.part(en.warp.s, en.adrift.s)).toBe(
+      "Ship-part Ship-part--warp Ship-part--adrift ghi mno jkl"
+    );
+    expect(en.part(en.warp(), en.adrift())).toBe(
+      "Ship-part Ship-part--warp Ship-part--adrift ghi mno jkl"
+    );
+
+    expect(en.part(en.warp(true), en.adrift(true))).toBe(
+      "Ship-part Ship-part--warp Ship-part--adrift ghi mno jkl"
+    );
+    expect(en.part(en.warp(true), en.adrift(false))).toBe(
+      "Ship-part Ship-part--warp ghi jkl"
+    );
+    expect(en.part(en.warp(false), en.adrift(false))).toBe("Ship-part ghi");
+    expect(en.part(en.warp(0), en.adrift("at space"))).toBe("Ship-part ghi");
+    // all non-bool values ignored unless config.strictBoolChecks=false
+
+    expect(en.part({ warp: true, adrift: true })).toBe(
+      "Ship-part Ship-part--warp Ship-part--adrift ghi mno jkl"
+    );
+    expect(en.part({ warp: true, adrift: false })).toBe(
+      "Ship-part Ship-part--warp ghi jkl"
+    );
+    expect(en.part({ warp: false, adrift: false })).toBe("Ship-part ghi");
+    expect(en.part({ warp: 0, adrift: "at space" })).toBe("Ship-part ghi");
+    // all non-bool values ignored unless config.strictBoolChecks=false
   });
 
   test("omit base name", () => {

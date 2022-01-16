@@ -7,11 +7,11 @@ export declare type ENSSFunc<ElemEnum, CondEnum> = {
     [key in keyof ElemEnum]: ENSSElementFunc<CondEnum>;
 } & ENSSElementFunc<CondEnum>;
 export declare type ENSSElementFunc<CondEnum> = {
-    [key in keyof CondEnum]: ENSSConditionalFunc;
+    [key in keyof CondEnum]: ENSSCondFunc;
 } & ((...classes: ENSSArg[]) => string) & {
     s: string;
 };
-export declare type ENSSConditionalFunc = ((on?: unknown) => string) & {
+export declare type ENSSCondFunc = ((on?: unknown) => string) & {
     s: string;
 };
 export declare type ENSSArg = null | undefined | boolean | string | Record<string, unknown>;
@@ -21,11 +21,11 @@ export declare type ENSSConfig = {
     conditionalSeparator: string;
     strictBoolChecks: boolean;
 };
-declare function enss<NameEnum = object, ElemEnum = object, CondEnum = object>(nameEnum?: null | Record<keyof NameEnum, string | number>, elementEnum?: null | Record<keyof ElemEnum, string | number>, conditionalEnum?: null | Record<keyof CondEnum, string | number>, classMappings?: null | ENSSClassRecord<NameEnum, ElemEnum, CondEnum> | ((classMappings: ENSSClassRecord<NameEnum, ElemEnum, CondEnum>) => void | ENSSClassRecord<NameEnum, ElemEnum, CondEnum>)): ENSS<NameEnum, ElemEnum, CondEnum>;
+declare function enss<NameEnum = object, ElemEnum = object, CondEnum = object>(nameEnum?: null | Record<keyof NameEnum, string | number>, elemEnum?: null | Record<keyof ElemEnum, string | number>, condEnum?: null | Record<keyof CondEnum, string | number>, classMappings?: null | ENSSClassRecord<NameEnum, ElemEnum, CondEnum> | ((classMappings: ENSSClassRecord<NameEnum, ElemEnum, CondEnum>) => void | ENSSClassRecord<NameEnum, ElemEnum, CondEnum>)): ENSS<NameEnum, ElemEnum, CondEnum>;
 declare namespace enss {
     var configure: (configUpdate: Partial<ENSSConfig> | null) => void;
 }
 export default enss;
-export declare function normalizeClass(config: Partial<ENSSConfig>, prefix: string, ...values: ENSSArg[]): string;
+export declare function normalizeClass(config: Partial<ENSSConfig>, mappings: null | Map<string, string>, prefix: string, ...values: ENSSArg[]): [string, string];
 export declare function omitEnumReverseMappings<T>(enumObj: T): T;
 export declare function extractNameEnumData<NameEnum, ElemEnum, CondEnum>(nameEnum?: null | Record<string, string | number | null>, classMappings?: null | ENSSClassRecord<NameEnum, ElemEnum, CondEnum>): [string | null, string | null];

@@ -27,65 +27,94 @@ var defaultConfig = {
     strictBoolChecks: true
 };
 var config = __assign({}, defaultConfig);
-function enss(nameEnum, elementEnum, conditionalEnum, classMappings) {
+function enss(nameEnum, elemEnum, condEnum, classMappings) {
     var _a;
     var elemSep = function () { return config.elementSeparator; };
     var condSep = function () { return config.conditionalSeparator; };
     nameEnum = omitEnumReverseMappings(nameEnum);
-    elementEnum = omitEnumReverseMappings(elementEnum);
-    conditionalEnum = omitEnumReverseMappings(conditionalEnum);
+    elemEnum = omitEnumReverseMappings(elemEnum);
+    condEnum = omitEnumReverseMappings(condEnum);
     if (typeof classMappings === "function") {
         var classMappingsRet = {};
         classMappings = (_a = classMappings(classMappingsRet)) !== null && _a !== void 0 ? _a : classMappingsRet;
     }
     var _b = extractNameEnumData(nameEnum, classMappings), baseName = _b[0], baseCls = _b[1];
-    if (classMappings && typeof classMappings === "object") {
-        var mappings_1 = new Map(Object.entries(classMappings));
-        elementEnum = Object.fromEntries(Object.entries(elementEnum !== null && elementEnum !== void 0 ? elementEnum : {}).map(function (_a) {
-            var elemName = _a[0], elemCls = _a[1];
-            var mappedCls = mappings_1.get(elemName);
-            if (mappedCls) {
-                if (!elemCls || elemCls === elemName) {
-                    return [elemName, mappedCls];
-                }
-                else {
-                    return [elemName, elemCls + " " + mappedCls];
-                }
+    // Cross-pollinate class mappings between enums and auxilliary mapping object:
+    var mapEntries = Object.entries(classMappings !== null && classMappings !== void 0 ? classMappings : []);
+    var mappings = new Map(mapEntries);
+    elemEnum = Object.fromEntries(Object.entries(elemEnum !== null && elemEnum !== void 0 ? elemEnum : {}).map(function (_a) {
+        var elemName = _a[0], elemCls = _a[1];
+        var mappedCls = mappings.get(elemName);
+        if (mappedCls) {
+            if (!elemCls || elemCls === elemName) {
+                return [elemName, mappedCls];
             }
-            return [elemName, elemCls];
-        }));
-        conditionalEnum = Object.fromEntries(Object.entries(conditionalEnum !== null && conditionalEnum !== void 0 ? conditionalEnum : {}).map(function (_a) {
-            var condName = _a[0], condCls = _a[1];
-            var mappedCls = mappings_1.get(condName);
-            if (mappedCls) {
-                if (!condCls || condCls === condName) {
-                    return [condName, mappedCls];
-                }
-                else {
-                    return [condName, condCls + " " + mappedCls];
-                }
+            else {
+                return [elemName, elemCls + " " + mappedCls];
             }
-            return [condName, condCls];
-        }));
-    }
+        }
+        else if (typeof elemCls === "string" && elemCls.length) {
+            mappings.set(elemName, elemCls);
+        }
+        return [elemName, elemCls];
+    }));
+    condEnum = Object.fromEntries(Object.entries(condEnum !== null && condEnum !== void 0 ? condEnum : {}).map(function (_a) {
+        var condName = _a[0], condCls = _a[1];
+        var mappedCls = mappings.get(condName);
+        if (mappedCls) {
+            if (!condCls || condCls === condName) {
+                return [condName, mappedCls];
+            }
+            else {
+                return [condName, condCls + " " + mappedCls];
+            }
+        }
+        else if (typeof condCls === "string" && condCls.length) {
+            mappings.set(condName, condCls);
+        }
+        return [condName, condCls];
+    }));
     function unprefix(classes) {
         return classes.map(function (cls) {
             var _a;
             if (baseName && typeof cls === "string") {
                 var scls = cls;
-                var baseCondClsPrefix = baseName + " " + baseName + condSep();
-                if ((_a = scls.startsWith) === null || _a === void 0 ? void 0 : _a.call(scls, baseCondClsPrefix)) {
-                    return scls === null || scls === void 0 ? void 0 : scls.slice(baseCondClsPrefix.length);
+                var condClsPrefix = baseName + " " + baseName + condSep();
+                if ((_a = scls.startsWith) === null || _a === void 0 ? void 0 : _a.call(scls, condClsPrefix)) {
+                    return scls === null || scls === void 0 ? void 0 : scls.slice(condClsPrefix.length);
                 }
-                else if (cls === baseName) {
+                else if (cls === baseName || cls === baseName + " " + baseCls) {
                     return null;
                 }
             }
             return cls;
         });
     }
+    var mapKeyRegex = new RegExp("^(" + Array.from(mappings.keys()).join("|") + ")");
+    var mapValRegex = new RegExp("(" + Array.from(mappings.values()).join("|") + ")$");
+    function unmap(classes) {
+        return classes.map(function (cls) {
+            if (typeof cls === "string") {
+                var keyMatch = void 0;
+                var valMatch = void 0;
+                while ((keyMatch = cls.match(mapKeyRegex)) &&
+                    (valMatch = cls.match(mapValRegex))) {
+                    if (mappings.get(keyMatch[1]) === valMatch[1]) {
+                        cls = cls.slice(0, cls.length - valMatch[1].length - 1);
+                    }
+                    else {
+                        break;
+                    }
+                }
+                if (baseCls && cls.endsWith(baseCls)) {
+                    cls = cls.slice(0, cls.length - baseCls.length - 1);
+                }
+            }
+            return cls;
+        });
+    }
     function makeCondClassBuilders(baseClass, condClassPrefix, appendClass) {
-        return Object.fromEntries(Object.entries(conditionalEnum !== null && conditionalEnum !== void 0 ? conditionalEnum : {}).map(function (_a) {
+        return Object.fromEntries(Object.entries(condEnum !== null && condEnum !== void 0 ? condEnum : {}).map(function (_a) {
             var condName = _a[0], condCls = _a[1];
             var condBaseCls = condClassPrefix + condName;
             function builder(on) {
@@ -123,24 +152,31 @@ function enss(nameEnum, elementEnum, conditionalEnum, classMappings) {
             return [condName, builder];
         }));
     }
-    var elemClsBuilders = Object.fromEntries(Object.entries(elementEnum !== null && elementEnum !== void 0 ? elementEnum : {}).map(function (_a) {
+    var elemClsBuilders = Object.fromEntries(Object.entries(elemEnum !== null && elemEnum !== void 0 ? elemEnum : {}).map(function (_a) {
         var elemName = _a[0], elemCls = _a[1];
         var elemBaseCls = (baseName ? baseName + elemSep() : "") + elemName;
         function builder() {
+            var _a;
             var classes = [];
             for (var _i = 0; _i < arguments.length; _i++) {
                 classes[_i] = arguments[_i];
             }
             var res = elemBaseCls;
+            var normalized = "";
+            var mapped = "";
             if (classes.length) {
-                var normalized = normalizeClass.apply(void 0, __spreadArray([config,
-                    res + condSep()], unprefix(classes), false));
+                _a = normalizeClass.apply(void 0, __spreadArray([config,
+                    mappings,
+                    res + condSep()], unmap(unprefix(classes)), false)), normalized = _a[0], mapped = _a[1];
                 if (normalized.length) {
                     res += " " + normalized;
                 }
             }
             if (elemCls && elemCls !== elemName) {
                 res += " " + elemCls;
+            }
+            if (mapped.length) {
+                res += " " + mapped;
             }
             return res;
         }
@@ -153,20 +189,27 @@ function enss(nameEnum, elementEnum, conditionalEnum, classMappings) {
     }));
     // Create top-level ENSS object (en):
     function mainClsBuilder() {
+        var _a;
         var classes = [];
         for (var _i = 0; _i < arguments.length; _i++) {
             classes[_i] = arguments[_i];
         }
         var res = baseName !== null && baseName !== void 0 ? baseName : "";
+        var normalized = "";
+        var mapped = "";
         if (classes.length) {
-            var normalized = normalizeClass.apply(void 0, __spreadArray([config,
-                res + condSep()], unprefix(classes), false));
+            _a = normalizeClass.apply(void 0, __spreadArray([config,
+                mappings,
+                res + condSep()], unmap(unprefix(classes)), false)), normalized = _a[0], mapped = _a[1];
             if (normalized.length) {
                 res += " " + normalized;
             }
         }
         if (baseCls) {
             res += " " + baseCls;
+        }
+        if (mapped.length) {
+            res += " " + mapped;
         }
         return res;
     }
@@ -194,18 +237,25 @@ function enss(nameEnum, elementEnum, conditionalEnum, classMappings) {
     return mainClsBuilder;
 }
 exports["default"] = enss;
-function normalizeClass(config, prefix) {
+function normalizeClass(config, mappings, prefix) {
     var values = [];
-    for (var _i = 2; _i < arguments.length; _i++) {
-        values[_i - 2] = arguments[_i];
+    for (var _i = 3; _i < arguments.length; _i++) {
+        values[_i - 3] = arguments[_i];
     }
     var res = "";
+    var mappedClasses = [];
     for (var _a = 0, values_1 = values; _a < values_1.length; _a++) {
         var val = values_1[_a];
         // filter out null, undefined, false, 0, "":
         if (val) {
             if (typeof val === "string" || val instanceof String) {
-                res += prefix + val + " ";
+                res += prefix + val.trim() + " ";
+                var mappedCls = mappings === null || mappings === void 0 ? void 0 : mappings.get(val);
+                if ((mappedCls === null || mappedCls === void 0 ? void 0 : mappedCls.length) &&
+                    (typeof mappedCls === "string" ||
+                        mappedCls instanceof String)) {
+                    mappedClasses.push(mappedCls.trim());
+                }
             }
             else if (Array.isArray(val)) {
                 throw new Error("ENSS Error: Spread arrays instead of passing directly," +
@@ -227,7 +277,13 @@ function normalizeClass(config, prefix) {
                     if (on === true || // only recognize boolean values
                         (!config.strictBoolChecks && on) // unless strictBoolChecks=false
                     ) {
-                        res += prefix + name_1 + " ";
+                        res += prefix + name_1.trim() + " ";
+                        var mappedCls = mappings === null || mappings === void 0 ? void 0 : mappings.get(name_1);
+                        if ((mappedCls === null || mappedCls === void 0 ? void 0 : mappedCls.length) &&
+                            (typeof mappedCls === "string" ||
+                                mappedCls instanceof String)) {
+                            mappedClasses.push(mappedCls.trim());
+                        }
                     }
                     // Ignore classes associated with all other `on` values, even those
                     // that are "truthy". This allows easily passing props objects into
@@ -239,7 +295,15 @@ function normalizeClass(config, prefix) {
             }
         }
     }
-    return res.trim();
+    return [
+        res.trim(),
+        mappedClasses.reverse().join(" "),
+        // reverse mappedClasses before joining so that they may be "unmapped" easily
+        // if nessary during class composition later, by comparing "out-to-in", eg.
+        // "elA elB baseMapCls elBMapCls elAMapCls" -> compare elA === elAMapCls ?
+        // "elA elB baseMapCls elBMapCls"           -> compare elB === elBMapCls ?
+        // "elA elB baseMapCls"                     -> class is fully "unmapped"
+    ];
 }
 exports.normalizeClass = normalizeClass;
 function omitEnumReverseMappings(enumObj) {
