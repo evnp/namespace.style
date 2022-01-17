@@ -5,10 +5,10 @@ export type ENSS<NameEnum, ElemEnum, CondEnum> = {
 } & ENSSFunc<ElemEnum, CondEnum>;
 
 export type ENSSFunc<ElemEnum, CondEnum> = {
-  [key in keyof ElemEnum]: ENSSElementFunc<CondEnum>;
-} & ENSSElementFunc<CondEnum>;
+  [key in keyof ElemEnum]: ENSSElemFunc<CondEnum>;
+} & ENSSElemFunc<CondEnum>;
 
-export type ENSSElementFunc<CondEnum> = {
+export type ENSSElemFunc<CondEnum> = {
   [key in keyof CondEnum]: ENSSCondFunc;
 } & ((...classes: ENSSArg[]) => string) & { s: string };
 
@@ -76,6 +76,9 @@ export default function enss<
   // Cross-pollinate class mappings between enums and auxilliary mapping object:
   const mapEntries = Object.entries(classMappings ?? []);
   const mappings = new Map(mapEntries);
+  if (baseName) {
+    mappings.set(baseName, baseCls ?? null);
+  }
   elemEnum = Object.fromEntries(
     Object.entries(elemEnum ?? {}).map(
       ([elemName, elemCls]: [string, unknown]) => {
@@ -88,6 +91,8 @@ export default function enss<
           }
         } else if (typeof elemCls === "string" && elemCls.length) {
           mappings.set(elemName, elemCls);
+        } else {
+          mappings.set(elemName, null);
         }
         return [elemName, elemCls];
       }
@@ -105,6 +110,8 @@ export default function enss<
           }
         } else if (typeof condCls === "string" && condCls.length) {
           mappings.set(condName, condCls);
+        } else {
+          mappings.set(condName, null);
         }
         return [condName, condCls];
       }
@@ -126,35 +133,33 @@ export default function enss<
     });
   }
 
-  const mapKeyRegex = new RegExp(
-    "^(" + Array.from(mappings.keys()).join("|") + ")"
-  );
-  const mapValRegex = new RegExp(
-    "(" + Array.from(mappings.values()).join("|") + ")$"
-  );
-
+  const clsKeys = Array.from(mappings.keys());
   function unmap(classes: ENSSArg[]): ENSSArg[] {
     return classes.map((cls: ENSSArg) => {
       if (typeof cls === "string") {
-        let keyMatch;
-        let valMatch;
-        while (
-          (keyMatch = cls.match(mapKeyRegex)) &&
-          (valMatch = cls.match(mapValRegex))
-        ) {
-          if (mappings.get(keyMatch[1]) === valMatch[1]) {
-            cls = cls.slice(0, cls.length - valMatch[1].length - 1);
-          } else {
-            break;
-          }
+        let keys = "";
+        let key;
+        let truncated = cls;
+        while ((key = clsKeys.find((k) => truncated.startsWith(k)))) {
+          keys += key + " ";
+          truncated = cls.slice(keys.length);
         }
-        if (baseCls && cls.endsWith(baseCls)) {
-          cls = cls.slice(0, cls.length - baseCls.length - 1);
-        }
+        return keys.trim();
       }
       return cls;
     });
   }
+
+  // TODO implement benchmarking and consider switching to regex impl:
+  // NOTE some amount of regex special-char escaping of classes will be necessary
+  // const clsRgx = new RegExp(
+  //   "((^| )(" + Array.from(mappings.keys()).join("|") + "))+"
+  // );
+  // function unmap(classes: ENSSArg[]): ENSSArg[] {
+  //   return classes.map(
+  //     (cls: ENSSArg) => (cls as string)?.match?.(clsRgx)?.[1] ?? cls
+  //   );
+  // }
 
   function makeCondClassBuilders(
     baseClass: string | null,
@@ -374,15 +379,12 @@ export function normalizeClass(
       }
     }
   }
-  return [
-    res.trim(),
-    mappedClasses.reverse().join(" "),
-    // reverse mappedClasses before joining so that they may be "unmapped" easily
-    // if nessary during class composition later, by comparing "out-to-in", eg.
-    // "elA elB baseMapCls elBMapCls elAMapCls" -> compare elA === elAMapCls ?
-    // "elA elB baseMapCls elBMapCls"           -> compare elB === elBMapCls ?
-    // "elA elB baseMapCls"                     -> class is fully "unmapped"
-  ];
+  return [res.trim(), mappedClasses.reverse().join(" ")];
+  // reverse mappedClasses before joining so that they may be "unmapped" easily
+  // if nessary during class composition later, by comparing "out-to-in", eg.
+  // "elA elB baseMapCls elBMapCls elAMapCls" -> compare elA === elAMapCls ?
+  // "elA elB baseMapCls elBMapCls"           -> compare elB === elBMapCls ?
+  // "elA elB baseMapCls"                     -> class is fully "unmapped"
 }
 
 export function omitEnumReverseMappings<T>(enumObj: T): T {

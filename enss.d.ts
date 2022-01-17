@@ -4,9 +4,9 @@ export declare type ENSS<NameEnum, ElemEnum, CondEnum> = {
     mapClasses: () => ENSS<NameEnum, ElemEnum, CondEnum>;
 } & ENSSFunc<ElemEnum, CondEnum>;
 export declare type ENSSFunc<ElemEnum, CondEnum> = {
-    [key in keyof ElemEnum]: ENSSElementFunc<CondEnum>;
-} & ENSSElementFunc<CondEnum>;
-export declare type ENSSElementFunc<CondEnum> = {
+    [key in keyof ElemEnum]: ENSSElemFunc<CondEnum>;
+} & ENSSElemFunc<CondEnum>;
+export declare type ENSSElemFunc<CondEnum> = {
     [key in keyof CondEnum]: ENSSCondFunc;
 } & ((...classes: ENSSArg[]) => string) & {
     s: string;

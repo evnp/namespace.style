@@ -1,18 +1,21 @@
 {
   "name": "enss",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "A structured, type-safe link between CSS and HTML.",
   "main": "enss.js",
   "types": "enss.d.ts",
   "files": [
+    "enss.d.ts",
     "enss.js",
-    "enss.d.ts"
+    "enss.min.js",
+    "enss.min.js.gz"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && npm run minify",
     "test": "jest",
     "lint": "eslint src/ test/",
-    "format": "eslint --fix src/ test/"
+    "format": "eslint --fix src/ test/",
+    "minify": "esbuild --minify --target=es5 enss.js > enss.min.js && gzip -kf9 enss.min.js && echo \"enss.min.js.gz :: $( ls -lh enss.min.js.gz | tr -s ' ' | cut -d' ' -f5 ) :: $( ls -l enss.min.js.gz | tr -s ' ' | cut -d' ' -f5 )B\""
   },
   "repository": {
     "type": "git",
@@ -34,6 +37,7 @@
     "@types/jest": "^27.0.3",
     "@typescript-eslint/eslint-plugin": "^5.8.1",
     "@typescript-eslint/parser": "^5.8.1",
+    "esbuild": "0.14.11",
     "eslint": "^8.5.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-jest": "^25.3.2",
