@@ -46,9 +46,9 @@ export default function enss<
   ElemEnum = object,
   CondEnum = object
 >(
-  nameEnum?: null | Record<keyof NameEnum, string | number>,
-  elemEnum?: null | Record<keyof ElemEnum, string | number>,
-  condEnum?: null | Record<keyof CondEnum, string | number>,
+  nameEnum?: null | Record<keyof NameEnum, string | number | boolean>,
+  elemEnum?: null | Record<keyof ElemEnum, string | number | boolean>,
+  condEnum?: null | Record<keyof CondEnum, string | number | boolean>,
   classMappings?:
     | null
     | ENSSClassRecord<NameEnum, ElemEnum, CondEnum>
@@ -401,7 +401,7 @@ export function omitEnumReverseMappings<T>(enumObj: T): T {
 }
 
 export function extractNameEnumData<NameEnum, ElemEnum, CondEnum>(
-  nameEnum?: null | Record<string, string | number | null>,
+  nameEnum?: null | Record<string, string | number | boolean | null>,
   classMappings?: null | ENSSClassRecord<NameEnum, ElemEnum, CondEnum>
 ): [string | null, string | null] {
   let baseName: string | null = null;
