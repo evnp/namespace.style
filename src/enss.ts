@@ -1,29 +1,30 @@
 export type ENSS<NameEnum, ElemEnum, CondEnum> = {
-  [key in keyof NameEnum]: ENSSFunc<ElemEnum, CondEnum>;
+  [key in keyof NameEnum]: ENSSBaseFunc<ElemEnum, CondEnum>;
 } & {
   mapClasses: () => ENSS<NameEnum, ElemEnum, CondEnum>;
-} & ENSSFunc<ElemEnum, CondEnum>;
+} & ENSSBaseFunc<ElemEnum, CondEnum>;
 
-export type ENSSFunc<ElemEnum, CondEnum> = {
+export type ENSSBaseFunc<ElemEnum, CondEnum> = {
   [key in keyof ElemEnum]: ENSSElemFunc<CondEnum>;
 } & ENSSElemFunc<CondEnum>;
 
 export type ENSSElemFunc<CondEnum> = {
   [key in keyof CondEnum]: ENSSCondFunc;
-} & ((...classes: ENSSArg[]) => string) & { s: string };
+} & ((...args: ENSSArg[]) => ENSSElemFunc<CondEnum>) &
+  ENSSResolvers;
 
-export type ENSSCondFunc = ((on?: unknown) => string) & {
+export type ENSSCondFunc = ((on?: unknown) => ENSSCondFunc) & ENSSResolvers;
+
+export type ENSSResolvers = {
+  c: string;
+  class: string;
   s: string;
+  string: string;
 };
 
-export type ENSSArg =
-  | null
-  | undefined
-  | boolean
-  | string
-  | Record<string, unknown>;
+export type ENSSArg = ENSSCondFunc | string[] | Record<string, unknown>;
 
-export type ENSSClassRecord<NameEnum, ElemEnum, CondEnum> = Partial<
+export type ENSSClassMap<NameEnum, ElemEnum, CondEnum> = Partial<
   Record<keyof NameEnum | keyof ElemEnum | keyof CondEnum, string>
 >;
 
@@ -49,12 +50,12 @@ export default function enss<
   nameEnum?: null | Record<keyof NameEnum, string | number | boolean>,
   elemEnum?: null | Record<keyof ElemEnum, string | number | boolean>,
   condEnum?: null | Record<keyof CondEnum, string | number | boolean>,
-  classMappings?:
+  classMap?:
     | null
-    | ENSSClassRecord<NameEnum, ElemEnum, CondEnum>
+    | ENSSClassMap<NameEnum, ElemEnum, CondEnum>
     | ((
-        classMappings: ENSSClassRecord<NameEnum, ElemEnum, CondEnum>
-      ) => void | ENSSClassRecord<NameEnum, ElemEnum, CondEnum>)
+        classMap: ENSSClassMap<NameEnum, ElemEnum, CondEnum>
+      ) => void | ENSSClassMap<NameEnum, ElemEnum, CondEnum>)
 ): ENSS<NameEnum, ElemEnum, CondEnum> {
   const elemSep = () => config.elementSeparator;
   const condSep = () => config.conditionalSeparator;
@@ -63,18 +64,18 @@ export default function enss<
   elemEnum = omitEnumReverseMappings(elemEnum);
   condEnum = omitEnumReverseMappings(condEnum);
 
-  if (typeof classMappings === "function") {
-    const classMappingsRet = {};
-    classMappings = classMappings(classMappingsRet) ?? classMappingsRet;
+  if (typeof classMap === "function") {
+    const classMapRet = {};
+    classMap = classMap(classMapRet) ?? classMapRet;
   }
 
   const [baseName, baseCls] = extractNameEnumData<NameEnum, ElemEnum, CondEnum>(
     nameEnum,
-    classMappings
+    classMap
   );
 
   // Cross-pollinate class mappings between enums and auxilliary mapping object:
-  const mapEntries = Object.entries(classMappings ?? []);
+  const mapEntries = Object.entries(classMap ?? []);
   const mappings = new Map(mapEntries);
   if (baseName) {
     mappings.set(baseName, baseCls ?? null);
@@ -402,7 +403,7 @@ export function omitEnumReverseMappings<T>(enumObj: T): T {
 
 export function extractNameEnumData<NameEnum, ElemEnum, CondEnum>(
   nameEnum?: null | Record<string, string | number | boolean | null>,
-  classMappings?: null | ENSSClassRecord<NameEnum, ElemEnum, CondEnum>
+  classMap?: null | ENSSClassMap<NameEnum, ElemEnum, CondEnum>
 ): [string | null, string | null] {
   let baseName: string | null = null;
   let baseCls: string | null = null;
@@ -426,10 +427,10 @@ export function extractNameEnumData<NameEnum, ElemEnum, CondEnum>(
     }
   }
 
-  if (baseName && classMappings && typeof classMappings === "object") {
+  if (baseName && classMap && typeof classMap === "object") {
     const mappedBaseCls =
-      Object.prototype.hasOwnProperty.call(classMappings, baseName) &&
-      classMappings[baseName as keyof NameEnum];
+      Object.prototype.hasOwnProperty.call(classMap, baseName) &&
+      classMap[baseName as keyof NameEnum];
     if (mappedBaseCls) {
       baseCls = (baseCls ? baseCls + " " : "") + mappedBaseCls;
     }
