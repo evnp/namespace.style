@@ -4,17 +4,6 @@ export type ENSS<NameEnum, ElemEnum, CondEnum> = {
   mapClasses: () => ENSS<NameEnum, ElemEnum, CondEnum>;
 } & ENSSBaseFunc<ElemEnum, CondEnum>;
 
-export type ENSSBaseFunc<ElemEnum, CondEnum> = {
-  [key in keyof ElemEnum]: ENSSElemFunc<CondEnum>;
-} & ENSSElemFunc<CondEnum>;
-
-export type ENSSElemFunc<CondEnum> = {
-  [key in keyof CondEnum]: ENSSCondFunc;
-} & ((...args: ENSSArg[]) => ENSSElemFunc<CondEnum>) &
-  ENSSResolvers;
-
-export type ENSSCondFunc = ((on?: unknown) => ENSSCondFunc) & ENSSResolvers;
-
 export type ENSSResolvers = {
   c: string;
   class: string;
@@ -22,7 +11,33 @@ export type ENSSResolvers = {
   string: string;
 };
 
-export type ENSSArg = ENSSCondFunc | string[] | Record<string, unknown>;
+export type ENSSBase<ElemEnum, CondEnum> = ENSSElem<ElemEnum, CondEnum> &
+  ENSSCond<CondEnum>;
+
+export type ENSSElem<ElemEnum, CondEnum> = {
+  [key in keyof ElemEnum]: ENSSElemFunc<ElemEnum, CondEnum>;
+} & ENSSResolvers;
+
+export type ENSSCond<CondEnum> = {
+  [key in keyof CondEnum]: ENSSCondFunc<CondEnum>;
+} & ENSSResolvers;
+
+export type ENSSBaseFunc<ElemEnum, CondEnum> = ENSSBase<ElemEnum, CondEnum> &
+  ((...args: ENSSArg<ElemEnum, CondEnum>[]) => ENSSElem<CondEnum, ElemEnum>);
+
+export type ENSSElemFunc<ElemEnum, CondEnum> = ENSSCond<CondEnum> &
+  ((...args: ENSSArg<ElemEnum, CondEnum>[]) => ENSSCond<CondEnum>);
+
+export type ENSSCondFunc<CondEnum> = ENSSCond<CondEnum> &
+  ((on?: unknown) => ENSSCond<CondEnum>);
+
+export type ENSSArg<ElemEnum, CondEnum> =
+  | ENSSElem<ElemEnum, CondEnum>
+  | ENSSElemFunc<ElemEnum, CondEnum>
+  | ENSSCond<CondEnum>
+  | ENSSCondFunc<CondEnum>
+  | string[]
+  | Record<string, unknown>;
 
 export type ENSSClassMap<NameEnum, ElemEnum, CondEnum> = Partial<
   Record<keyof NameEnum | keyof ElemEnum | keyof CondEnum, string>

@@ -9,7 +9,7 @@ export declare type ENSSBaseFunc<ElemEnum, CondEnum> = {
 export declare type ENSSElemFunc<CondEnum> = {
     [key in keyof CondEnum]: ENSSCondFunc;
 } & ((...args: ENSSArg[]) => ENSSElemFunc<CondEnum>) & ENSSResolvers;
-export declare type ENSSCondFunc = ((on?: unknown) => ENSSCondFunc) & ENSSResolvers;
+export declare type ENSSCondFunc = ((on?: unknown) => ENSSResolvers) & ENSSResolvers;
 export declare type ENSSResolvers = {
     c: string;
     class: string;
@@ -28,6 +28,6 @@ declare namespace enss {
     var configure: (configUpdate: Partial<ENSSConfig> | null) => void;
 }
 export default enss;
-export declare function normalizeClass(config: Partial<ENSSConfig>, mappings: null | Map<string, string>, prefix: string, ...values: ENSSArg[]): [string, string];
+export declare function composeClassArguments(config: Partial<ENSSConfig>, mappings: null | Map<string, string>, prefix: string, ...values: ENSSArg[]): [string, string];
 export declare function omitEnumReverseMappings<T>(enumObj: T): T;
 export declare function extractNameEnumData<NameEnum, ElemEnum, CondEnum>(nameEnum?: null | Record<string, string | number | boolean | null>, classMap?: null | ENSSClassMap<NameEnum, ElemEnum, CondEnum>): [string | null, string | null];
