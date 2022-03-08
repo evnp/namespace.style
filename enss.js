@@ -10,223 +10,152 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
-    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-        if (ar || !(i in from)) {
-            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-            ar[i] = from[i];
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.extractNameEnumData = exports.omitEnumReverseMappings = exports.normalizeClass = void 0;
+exports.extractNameEnumData = exports.omitEnumReverseMappings = exports.composeClass = void 0;
 var defaultConfig = {
     elementSeparator: "-",
     conditionalSeparator: "--",
     strictBoolChecks: true,
 };
 var config = __assign({}, defaultConfig);
-function enss(nameEnum, elemEnum, condEnum, classMappings) {
+function toStringError() {
+    throw new Error("Do not coerce to string directly; use .c (.class) or .s (.string)");
+}
+function enss(nameEnum, elemEnum, condEnum, classMap) {
     var _a;
     var elemSep = function () { return config.elementSeparator; };
     var condSep = function () { return config.conditionalSeparator; };
     nameEnum = omitEnumReverseMappings(nameEnum);
     elemEnum = omitEnumReverseMappings(elemEnum);
     condEnum = omitEnumReverseMappings(condEnum);
-    if (typeof classMappings === "function") {
-        var classMappingsRet = {};
-        classMappings = (_a = classMappings(classMappingsRet)) !== null && _a !== void 0 ? _a : classMappingsRet;
+    if (typeof classMap === "function") {
+        var classMapRet = {};
+        classMap = (_a = classMap(classMapRet)) !== null && _a !== void 0 ? _a : classMapRet;
     }
-    var _b = extractNameEnumData(nameEnum, classMappings), baseName = _b[0], baseCls = _b[1];
+    var _b = extractNameEnumData(nameEnum, classMap), baseName = _b[0], baseClass = _b[1];
+    function crossPollinate(_a) {
+        var name = _a[0], cls = _a[1];
+        var mappedCls = mappings.get(name);
+        if (mappedCls) {
+            if (!cls || cls === name) {
+                return [name, mappedCls];
+            }
+            else {
+                return [name, cls + " " + mappedCls];
+            }
+        }
+        else if (typeof cls === "string" && cls.length) {
+            mappings.set(name, cls);
+        }
+        else {
+            mappings.set(name, null);
+        }
+        return [name, cls];
+    }
     // Cross-pollinate class mappings between enums and auxilliary mapping object:
-    var mapEntries = Object.entries(classMappings !== null && classMappings !== void 0 ? classMappings : []);
+    var mapEntries = Object.entries(classMap !== null && classMap !== void 0 ? classMap : []);
     var mappings = new Map(mapEntries);
     if (baseName) {
-        mappings.set(baseName, baseCls !== null && baseCls !== void 0 ? baseCls : null);
+        mappings.set(baseName, baseClass !== null && baseClass !== void 0 ? baseClass : null);
     }
-    elemEnum = Object.fromEntries(Object.entries(elemEnum !== null && elemEnum !== void 0 ? elemEnum : {}).map(function (_a) {
-        var elemName = _a[0], elemCls = _a[1];
-        var mappedCls = mappings.get(elemName);
-        if (mappedCls) {
-            if (!elemCls || elemCls === elemName) {
-                return [elemName, mappedCls];
-            }
-            else {
-                return [elemName, elemCls + " " + mappedCls];
-            }
-        }
-        else if (typeof elemCls === "string" && elemCls.length) {
-            mappings.set(elemName, elemCls);
-        }
-        else {
-            mappings.set(elemName, null);
-        }
-        return [elemName, elemCls];
-    }));
-    condEnum = Object.fromEntries(Object.entries(condEnum !== null && condEnum !== void 0 ? condEnum : {}).map(function (_a) {
-        var condName = _a[0], condCls = _a[1];
-        var mappedCls = mappings.get(condName);
-        if (mappedCls) {
-            if (!condCls || condCls === condName) {
-                return [condName, mappedCls];
-            }
-            else {
-                return [condName, condCls + " " + mappedCls];
-            }
-        }
-        else if (typeof condCls === "string" && condCls.length) {
-            mappings.set(condName, condCls);
-        }
-        else {
-            mappings.set(condName, null);
-        }
-        return [condName, condCls];
-    }));
-    function unprefix(classes) {
-        return classes.map(function (cls) {
-            var _a;
-            if (baseName && typeof cls === "string") {
-                var scls = cls;
-                var condClsPrefix = baseName + " " + baseName + condSep();
-                if ((_a = scls.startsWith) === null || _a === void 0 ? void 0 : _a.call(scls, condClsPrefix)) {
-                    return scls === null || scls === void 0 ? void 0 : scls.slice(condClsPrefix.length);
-                }
-                else if (cls === baseName || cls === baseName + " " + baseCls) {
-                    return null;
-                }
-            }
-            return cls;
-        });
-    }
-    var clsKeys = Array.from(mappings.keys());
-    function unmap(classes) {
-        return classes.map(function (cls) {
-            if (typeof cls === "string") {
-                var keys = "";
-                var key = void 0;
-                var truncated_1 = cls;
-                while ((key = clsKeys.find(function (k) { return truncated_1.startsWith(k); }))) {
-                    keys += key + " ";
-                    truncated_1 = cls.slice(keys.length);
-                }
-                return keys.trim();
-            }
-            return cls;
-        });
-    }
-    // TODO implement benchmarking and consider switching to regex impl:
-    // NOTE some amount of regex special-char escaping of classes will be necessary
-    // const clsRgx = new RegExp(
-    //   "((^| )(" + Array.from(mappings.keys()).join("|") + "))+"
-    // );
-    // function unmap(classes: ENSSArg[]): ENSSArg[] {
-    //   return classes.map(
-    //     (cls: ENSSArg) => (cls as string)?.match?.(clsRgx)?.[1] ?? cls
-    //   );
-    // }
-    function makeCondClassBuilders(baseClass, condClassPrefix, appendClass) {
-        return Object.fromEntries(Object.entries(condEnum !== null && condEnum !== void 0 ? condEnum : {}).map(function (_a) {
-            var condName = _a[0], condCls = _a[1];
-            var condBaseCls = condClassPrefix + condName;
-            function builder(on) {
-                // note: standard function rather than arrow-function needed here
-                //       so that arguments.length can be correctly inspected;
-                //       allows distinction between myCls() and myCls(undefined) calls
-                var res = "";
-                if (!arguments.length ||
-                    on === true || // only recognize boolean values
-                    (!config.strictBoolChecks && on) // unless strictBoolChecks=false
-                ) {
-                    res = (baseClass ? baseClass + " " : "") + condBaseCls;
-                    if (appendClass) {
-                        res += " " + appendClass;
+    elemEnum = Object.fromEntries(Object.entries(elemEnum !== null && elemEnum !== void 0 ? elemEnum : {}).map(crossPollinate));
+    condEnum = Object.fromEntries(Object.entries(condEnum !== null && condEnum !== void 0 ? condEnum : {}).map(crossPollinate));
+    function makeCondClassBuilders(classPrelude, classPrefix) {
+        function makeBuilders(chainCls, chainStr) {
+            return Object.fromEntries(Object.entries(condEnum !== null && condEnum !== void 0 ? condEnum : {}).map(function (_a) {
+                var condName = _a[0], condClass = _a[1];
+                var priorClass = classPrelude ? classPrelude + " " : "";
+                var afterClass = condClass && condClass !== condName ? " " + condClass : "";
+                function builder(on) {
+                    // note: standard function rather than arrow-function needed here
+                    //       so that arguments.length can be correctly inspected;
+                    //       allows distinction between myCls() and myCls(undefined) calls
+                    var str;
+                    var cls;
+                    if (!arguments.length ||
+                        on === true || // only recognize boolean values
+                        (!config.strictBoolChecks && on) // unless strictBoolChecks=false
+                    ) {
+                        str = classPrefix + condName + afterClass;
+                        cls = priorClass + str;
                     }
-                    if (condCls && condCls !== condName) {
-                        res += " " + condCls;
+                    else {
+                        str = "";
+                        cls = classPrelude !== null && classPrelude !== void 0 ? classPrelude : "";
                     }
-                }
-                else {
-                    res = baseClass !== null && baseClass !== void 0 ? baseClass : "";
-                    if (appendClass) {
-                        res += " " + appendClass;
+                    if (chainStr.length) {
+                        chainStr = chainStr + (str.length ? " " + str : "");
                     }
+                    if (chainCls.length) {
+                        chainCls = chainCls + (str.length ? " " + str : "");
+                    }
+                    return __assign({ class: chainCls.length ? chainCls : cls, c: chainCls.length ? chainCls : cls, string: chainStr.length ? chainStr : str, s: chainStr.length ? chainStr : str, toString: toStringError }, makeBuilders(cls, str));
                 }
-                return res;
-            }
-            builder.s = (baseClass ? baseClass + " " : "") + condBaseCls;
-            if (appendClass) {
-                builder.s += " " + appendClass;
-            }
-            if (condCls && condCls !== condName) {
-                builder.s += " " + condCls;
-            }
-            return [condName, builder];
-        }));
+                builder.string = builder.s = classPrefix + condName + afterClass;
+                builder.class = builder.c = priorClass + builder.string;
+                builder.toString = toStringError;
+                return [condName, builder];
+            }));
+        }
+        return makeBuilders("", "");
     }
     var elemClsBuilders = Object.fromEntries(Object.entries(elemEnum !== null && elemEnum !== void 0 ? elemEnum : {}).map(function (_a) {
-        var elemName = _a[0], elemCls = _a[1];
-        var elemBaseCls = (baseName ? baseName + elemSep() : "") + elemName;
+        var elemName = _a[0], elemClass = _a[1];
+        var afterClass = elemClass && elemClass !== elemName ? " " + elemClass : "";
+        var classPrefix = baseName ? baseName + elemSep() : "";
         function builder() {
-            var _a;
-            var classes = [];
+            var args = [];
             for (var _i = 0; _i < arguments.length; _i++) {
-                classes[_i] = arguments[_i];
+                args[_i] = arguments[_i];
             }
-            var res = elemBaseCls;
-            var normalized = "";
-            var mapped = "";
-            if (classes.length) {
-                _a = normalizeClass.apply(void 0, __spreadArray([config,
-                    mappings,
-                    res + condSep()], unmap(unprefix(classes)), false)), normalized = _a[0], mapped = _a[1];
-                if (normalized.length) {
-                    res += " " + normalized;
-                }
+            var str = "";
+            if (args.length) {
+                str += composeClass(config, mappings, classPrefix + elemName + condSep(), args);
             }
-            if (elemCls && elemCls !== elemName) {
-                res += " " + elemCls;
-            }
-            if (mapped.length) {
-                res += " " + mapped;
-            }
-            return res;
+            var cls = classPrefix + elemName + afterClass + (str.length ? " " + str : "");
+            return {
+                class: cls,
+                c: cls,
+                string: str,
+                s: str,
+                toString: toStringError,
+            };
         }
-        builder.s = elemBaseCls;
-        if (elemCls && elemCls !== elemName) {
-            builder.s += " " + elemCls;
-        }
-        Object.assign(builder, makeCondClassBuilders(elemBaseCls, elemBaseCls + condSep(), elemCls && elemCls !== elemName ? elemCls : null));
+        builder.string = builder.s = "";
+        builder.class = builder.c =
+            classPrefix + elemName + afterClass + builder.string;
+        builder.toString = toStringError;
+        Object.assign(builder, makeCondClassBuilders(builder.c, classPrefix + elemName + condSep()));
         return [elemName, builder];
     }));
+    var basePriorClass = baseName !== null && baseName !== void 0 ? baseName : "";
+    var baseAfterClass = baseClass !== null && baseClass !== void 0 ? baseClass : "";
+    var classPrefix = baseName ? baseName + condSep() : "";
     // Create top-level ENSS object (en):
     function mainClsBuilder() {
-        var _a;
-        var classes = [];
+        var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
-            classes[_i] = arguments[_i];
+            args[_i] = arguments[_i];
         }
-        var res = baseName !== null && baseName !== void 0 ? baseName : "";
-        var normalized = "";
-        var mapped = "";
-        if (classes.length) {
-            _a = normalizeClass.apply(void 0, __spreadArray([config,
-                mappings,
-                res + condSep()], unmap(unprefix(classes)), false)), normalized = _a[0], mapped = _a[1];
-            if (normalized.length) {
-                res += " " + normalized;
-            }
+        var str = baseAfterClass;
+        if (args.length) {
+            str +=
+                (str.length ? " " : "") +
+                    composeClass(config, mappings, classPrefix, args);
         }
-        if (baseCls) {
-            res += " " + baseCls;
-        }
-        if (mapped.length) {
-            res += " " + mapped;
-        }
-        return res;
+        var cls = basePriorClass + (baseName && str.length ? " " : "") + str;
+        return {
+            class: cls,
+            c: cls,
+            string: str,
+            s: str,
+            toString: toStringError,
+        };
     }
-    // Set en.s:
-    mainClsBuilder.s = (baseName !== null && baseName !== void 0 ? baseName : "") + (baseCls ? " " + baseCls : "");
+    mainClsBuilder.class = mainClsBuilder.c =
+        basePriorClass + (baseName && baseClass ? " " : "") + baseAfterClass;
+    mainClsBuilder.string = mainClsBuilder.s = baseAfterClass;
+    mainClsBuilder.toString = toStringError;
     // Set en.name:
     Object.defineProperty(mainClsBuilder, "name", {
         value: baseName,
@@ -245,56 +174,56 @@ function enss(nameEnum, elemEnum, condEnum, classMappings) {
     Object.assign(mainClsBuilder, elemClsBuilders);
     // Set en.condA, en.condB, etc:
     // eg. en.part.s
-    Object.assign(mainClsBuilder, makeCondClassBuilders(baseName, baseName ? baseName + condSep() : "", baseCls));
+    Object.assign(mainClsBuilder, makeCondClassBuilders(mainClsBuilder.c, baseName ? baseName + condSep() : ""));
     return mainClsBuilder;
 }
 exports.default = enss;
-function normalizeClass(config, mappings, prefix) {
-    var values = [];
-    for (var _i = 3; _i < arguments.length; _i++) {
-        values[_i - 3] = arguments[_i];
-    }
+function composeClass(config, mappings, prefix, values) {
     var res = "";
-    var mappedClasses = [];
-    for (var _a = 0, values_1 = values; _a < values_1.length; _a++) {
-        var val = values_1[_a];
+    for (var _i = 0, values_1 = values; _i < values_1.length; _i++) {
+        var val = values_1[_i];
         // filter out null, undefined, false, 0, "":
         if (val) {
             if (typeof val === "string" || val instanceof String) {
-                res += prefix + val.trim() + " ";
-                var mappedCls = mappings === null || mappings === void 0 ? void 0 : mappings.get(val);
-                if ((mappedCls === null || mappedCls === void 0 ? void 0 : mappedCls.length) &&
-                    (typeof mappedCls === "string" ||
-                        mappedCls instanceof String)) {
-                    mappedClasses.push(mappedCls.trim());
-                }
+                // this is a String:
+                throw new Error("Do not pass strings directly; enclose in object or array");
             }
-            else if (Array.isArray(val)) {
-                throw new Error("ENSS Error: Spread arrays instead of passing directly," +
-                    " eg. cc.mycls(...myarr) instead of cc.mycls(myarr)");
+            else if (Object.prototype.hasOwnProperty.call(val, "class") &&
+                Object.prototype.hasOwnProperty.call(val, "c") &&
+                Object.prototype.hasOwnProperty.call(val, "string") &&
+                Object.prototype.hasOwnProperty.call(val, "s")) {
+                // this is an ENSS expression:
+                var str = val.string;
+                res += (str === null || str === void 0 ? void 0 : str.length) ? " " + str : "";
             }
             else {
+                // this is an Object or Array:
                 var entries = void 0;
-                try {
-                    entries = Object.entries(val);
+                if (Array.isArray(val)) {
+                    entries = val.map(function (cls) { return [cls, true]; });
                 }
-                catch (e) {
-                    entries = null;
+                else {
+                    try {
+                        entries = Object.entries(val);
+                    }
+                    catch (e) {
+                        entries = null;
+                    }
+                    if (!(entries === null || entries === void 0 ? void 0 : entries.length)) {
+                        throw new Error("ENSS Error: Invalid input ".concat(JSON.stringify(val), "."));
+                    }
                 }
-                if (!(entries === null || entries === void 0 ? void 0 : entries.length)) {
-                    throw new Error("ENSS Error: Invalid input ".concat(JSON.stringify(val), "."));
-                }
-                for (var _b = 0, entries_1 = entries; _b < entries_1.length; _b++) {
-                    var _c = entries_1[_b], name_1 = _c[0], on = _c[1];
+                for (var _a = 0, entries_1 = entries; _a < entries_1.length; _a++) {
+                    var _b = entries_1[_a], name_1 = _b[0], on = _b[1];
                     if (on === true || // only recognize boolean values
                         (!config.strictBoolChecks && on) // unless strictBoolChecks=false
                     ) {
-                        res += prefix + name_1.trim() + " ";
+                        res += " " + prefix + name_1.trim();
                         var mappedCls = mappings === null || mappings === void 0 ? void 0 : mappings.get(name_1);
                         if ((mappedCls === null || mappedCls === void 0 ? void 0 : mappedCls.length) &&
                             (typeof mappedCls === "string" ||
                                 mappedCls instanceof String)) {
-                            mappedClasses.push(mappedCls.trim());
+                            res += " " + mappedCls.trim();
                         }
                     }
                     // Ignore classes associated with all other `on` values, even those
@@ -307,14 +236,9 @@ function normalizeClass(config, mappings, prefix) {
             }
         }
     }
-    return [res.trim(), mappedClasses.reverse().join(" ")];
-    // reverse mappedClasses before joining so that they may be "unmapped" easily
-    // if nessary during class composition later, by comparing "out-to-in", eg.
-    // "elA elB baseMapCls elBMapCls elAMapCls" -> compare elA === elAMapCls ?
-    // "elA elB baseMapCls elBMapCls"           -> compare elB === elBMapCls ?
-    // "elA elB baseMapCls"                     -> class is fully "unmapped"
+    return res.slice(1); // trim off leading space
 }
-exports.normalizeClass = normalizeClass;
+exports.composeClass = composeClass;
 function omitEnumReverseMappings(enumObj) {
     return !enumObj
         ? enumObj
@@ -332,35 +256,35 @@ function omitEnumReverseMappings(enumObj) {
         }));
 }
 exports.omitEnumReverseMappings = omitEnumReverseMappings;
-function extractNameEnumData(nameEnum, classMappings) {
+function extractNameEnumData(nameEnum, classMap) {
     var _a;
     var baseName = null;
-    var baseCls = null;
+    var baseClass = null;
     if (nameEnum && typeof nameEnum === "object") {
         var entries = Object.entries(nameEnum);
         if (entries.length > 1) {
             throw new Error("ENSS Error: Invalid name enum provided; should have at most 1 field.");
         }
         else if (entries.length === 1) {
-            _a = entries[0], baseName = _a[0], baseCls = _a[1];
+            _a = entries[0], baseName = _a[0], baseClass = _a[1];
             // handle numeric enum where keys map to arbitrary integers:
-            if (typeof baseCls !== "string") {
-                baseCls === null;
+            if (typeof baseClass !== "string") {
+                baseClass === null;
             }
             // handle string enum where keys map to equivalent value:
-            if (baseName === baseCls) {
-                baseCls === null;
+            if (baseName === baseClass) {
+                baseClass === null;
             }
         }
     }
-    if (baseName && classMappings && typeof classMappings === "object") {
-        var mappedBaseCls = Object.prototype.hasOwnProperty.call(classMappings, baseName) &&
-            classMappings[baseName];
+    if (baseName && classMap && typeof classMap === "object") {
+        var mappedBaseCls = Object.prototype.hasOwnProperty.call(classMap, baseName) &&
+            classMap[baseName];
         if (mappedBaseCls) {
-            baseCls = (baseCls ? baseCls + " " : "") + mappedBaseCls;
+            baseClass = (baseClass ? baseClass + " " : "") + mappedBaseCls;
         }
     }
-    return [baseName, baseCls];
+    return [baseName, baseClass];
 }
 exports.extractNameEnumData = extractNameEnumData;
 enss.configure = function (configUpdate) {

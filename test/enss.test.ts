@@ -87,8 +87,8 @@ describe("ENSS", () => {
       ).toThrow();
 
       // Test string resolveer (short version):
-      expect(en.s).toBe("Ship");
-      expect(en().s).toBe("Ship");
+      expect(en.s).toBe("");
+      expect(en().s).toBe("");
       expect(en(["enterprise"]).s).toBe("Ship--enterprise");
       expect(en({ enterprise: true }).s).toBe("Ship--enterprise");
       expect(
@@ -96,8 +96,8 @@ describe("ENSS", () => {
       ).toThrow();
 
       // Test string resolveer (verbose version):
-      expect(en.string).toBe("Ship");
-      expect(en().string).toBe("Ship");
+      expect(en.string).toBe("");
+      expect(en().string).toBe("");
       expect(en(["enterprise"]).string).toBe("Ship--enterprise");
       expect(en({ enterprise: true }).string).toBe("Ship--enterprise");
       expect(
@@ -123,8 +123,8 @@ describe("ENSS", () => {
             .c
       ).toThrow();
       //
-      expect(en.Ship.s).toBe("Ship");
-      expect(en.Ship().s).toBe("Ship");
+      expect(en.Ship.s).toBe("");
+      expect(en.Ship().s).toBe("");
       expect(en.Ship(["enterprise"]).s).toBe("Ship--enterprise");
       expect(en.Ship({ enterprise: true }).s).toBe("Ship--enterprise");
       expect(
@@ -168,8 +168,8 @@ describe("ENSS", () => {
       ).toThrow();
 
       // Test string resolver (short version):
-      expect(en.engine.s).toBe("Ship-engine");
-      expect(en.engine().s).toBe("Ship-engine");
+      expect(en.engine.s).toBe("");
+      expect(en.engine().s).toBe("");
       expect(en.engine(["nacelle"]).s).toBe("Ship-engine--nacelle");
       expect(en.engine({ nacelle: true }).s).toBe("Ship-engine--nacelle");
       expect(
@@ -178,8 +178,8 @@ describe("ENSS", () => {
       ).toThrow();
 
       // Test string resolver (verbose version):
-      expect(en.engine.string).toBe("Ship-engine");
-      expect(en.engine().string).toBe("Ship-engine");
+      expect(en.engine.string).toBe("");
+      expect(en.engine().string).toBe("");
       expect(en.engine(["nacelle"]).string).toBe("Ship-engine--nacelle");
       expect(en.engine({ nacelle: true }).string).toBe("Ship-engine--nacelle");
       expect(
@@ -205,10 +205,10 @@ describe("ENSS", () => {
           en.part("warpDrive" as unknown as ENSSArg<typeof Elem, typeof Cond>).c
       ).toThrow();
 
-      expect(en.part.s).toBe("Ship-part");
-      expect(en.part().s).toBe("Ship-part");
+      expect(en.part.s).toBe("");
+      expect(en.part().s).toBe("");
       expect(en.part(["warpDrive"]).s).toBe("Ship-part--warpDrive");
-      expect(en.part({ warpDrive: true }).c).toBe("Ship-part--warpDrive");
+      expect(en.part({ warpDrive: true }).s).toBe("Ship-part--warpDrive");
       expect(
         () =>
           en.part("warpDrive" as unknown as ENSSArg<typeof Elem, typeof Cond>).c
@@ -235,8 +235,8 @@ describe("ENSS", () => {
           ).c
       ).toThrow();
 
-      expect(en.Ship.engine.s).toBe("Ship-engine");
-      expect(en.Ship.engine().s).toBe("Ship-engine");
+      expect(en.Ship.engine.s).toBe("");
+      expect(en.Ship.engine().s).toBe("");
       expect(en.Ship.engine(["nacelle"]).s).toBe("Ship-engine--nacelle");
       expect(en.Ship.engine({ nacelle: true }).s).toBe("Ship-engine--nacelle");
       expect(
@@ -255,10 +255,10 @@ describe("ENSS", () => {
       expect(en.Ship.part.c).toBe("Ship-part");
       expect(en.Ship.part().c).toBe("Ship-part");
       expect(en.Ship.part(["warpDrive"]).c).toBe(
-        "Ship-part Ship-part-warpDrive"
+        "Ship-part Ship-part--warpDrive"
       );
       expect(en.Ship.part({ warpDrive: true }).c).toBe(
-        "Ship-part Ship-part-warpDrive"
+        "Ship-part Ship-part--warpDrive"
       );
       expect(
         () =>
@@ -267,10 +267,10 @@ describe("ENSS", () => {
           ).c
       ).toThrow();
 
-      expect(en.Ship.part.s).toBe("Ship-part");
-      expect(en.Ship.part().s).toBe("Ship-part");
-      expect(en.Ship.part(["warpDrive"]).s).toBe("Ship-part-warpDrive");
-      expect(en.Ship.part({ warpDrive: true }).s).toBe("Ship-part-warpDrive");
+      expect(en.Ship.part.s).toBe("");
+      expect(en.Ship.part().s).toBe("");
+      expect(en.Ship.part(["warpDrive"]).s).toBe("Ship-part--warpDrive");
+      expect(en.Ship.part({ warpDrive: true }).s).toBe("Ship-part--warpDrive");
 
       // Should throw: ENSS expressions should never be cast directly to string.
       expect(() => `${en.Ship.part}`).toThrow();
