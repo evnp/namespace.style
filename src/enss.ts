@@ -4,38 +4,43 @@ export type ENSS<NameEnum, ElemEnum, CondEnum> = {
   mapClasses: () => ENSS<NameEnum, ElemEnum, CondEnum>;
 } & ENSSBaseFunc<ElemEnum, CondEnum>;
 
-export type ENSSResolvers = {
-  c: string;
+export type ENSSObject = {
+  __enss__: boolean;
+  name: string;
   class: string;
-  s: string;
+  c: string;
   string: string;
+  s: string;
+  toString: () => string;
 };
 
-export type ENSSBase<ElemEnum, CondEnum> = ENSSElem<ElemEnum, CondEnum> &
-  ENSSCond<CondEnum>;
+export type ENSSBase<ElemEnum, CondEnum> = {
+  [key in keyof ElemEnum]: ENSSElemFunc<CondEnum>;
+} & {
+  [key in keyof CondEnum]: ENSSCondFunc;
+} & ENSSCond;
 
-export type ENSSElem<ElemEnum, CondEnum> = {
-  [key in keyof ElemEnum]: ENSSElemFunc<ElemEnum, CondEnum>;
-} & ENSSResolvers;
+export type ENSSElem<CondEnum> = {
+  [key in keyof CondEnum]: ENSSCondFunc;
+} & ENSSObject;
 
-export type ENSSCond<CondEnum> = {
-  [key in keyof CondEnum]: ENSSCondFunc<CondEnum>;
-} & ENSSResolvers;
+export type ENSSCond = ENSSObject & {
+  __enssCondOff__?: boolean;
+};
 
 export type ENSSBaseFunc<ElemEnum, CondEnum> = ENSSBase<ElemEnum, CondEnum> &
-  ((...args: ENSSArg<ElemEnum, CondEnum>[]) => ENSSElem<CondEnum, ElemEnum>);
+  ((...args: ENSSArg<CondEnum>[]) => ENSSElem<CondEnum>);
 
-export type ENSSElemFunc<ElemEnum, CondEnum> = ENSSCond<CondEnum> &
-  ((...args: ENSSArg<ElemEnum, CondEnum>[]) => ENSSCond<CondEnum>);
+export type ENSSElemFunc<CondEnum> = ENSSElem<CondEnum> &
+  ((...args: ENSSArg<CondEnum>[]) => ENSSCond);
 
-export type ENSSCondFunc<CondEnum> = ENSSCond<CondEnum> &
-  ((on?: unknown) => ENSSCond<CondEnum>);
+export type ENSSCondFunc = ENSSCond & ((on?: unknown) => ENSSCond);
 
-export type ENSSArg<ElemEnum, CondEnum> =
-  | ENSSElem<ElemEnum, CondEnum>
-  | ENSSElemFunc<ElemEnum, CondEnum>
-  | ENSSCond<CondEnum>
-  | ENSSCondFunc<CondEnum>
+export type ENSSArg<CondEnum> =
+  | ENSSElem<CondEnum>
+  | ENSSElemFunc<CondEnum>
+  | ENSSCond
+  | ENSSCondFunc
   | string[]
   | Record<string, unknown>;
 
@@ -57,7 +62,7 @@ const defaultConfig: ENSSConfig = {
 
 const config = { ...defaultConfig };
 
-function toStringError() {
+function toStringError(): string {
   throw new Error(
     "Do not coerce to string directly; use .c (.class) or .s (.string)"
   );
@@ -129,7 +134,7 @@ export default function enss<
     classPrelude: string | null,
     classPrefix: string
   ) {
-    function makeBuilders(chainCls: string, chainStr: string) {
+    function makeBuilders() {
       return Object.fromEntries(
         Object.entries(condEnum ?? {}).map(([condName, condClass]) => {
           const priorClass = classPrelude ? classPrelude + " " : "";
@@ -140,65 +145,78 @@ export default function enss<
             // note: standard function rather than arrow-function needed here
             //       so that arguments.length can be correctly inspected;
             //       allows distinction between myCls() and myCls(undefined) calls
-            let str;
-            let cls;
+            let str: string;
+            let cls: string;
+            let __enssCondOff__;
             if (
               !arguments.length ||
               on === true || // only recognize boolean values
               (!config.strictBoolChecks && on) // unless strictBoolChecks=false
             ) {
+              __enssCondOff__ = false;
               str = classPrefix + condName + afterClass;
               cls = priorClass + str;
             } else {
+              __enssCondOff__ = true;
               str = "";
               cls = classPrelude ?? "";
             }
-            if (chainStr.length) {
-              chainStr = chainStr + (str.length ? " " + str : "");
-            }
-            if (chainCls.length) {
-              chainCls = chainCls + (str.length ? " " + str : "");
-            }
             return {
-              class: chainCls.length ? chainCls : cls,
-              c: chainCls.length ? chainCls : cls,
-              string: chainStr.length ? chainStr : str,
-              s: chainStr.length ? chainStr : str,
+              __enss__: true,
+              ...(__enssCondOff__ ? { __enssCondOff__: true } : {}),
+              name: condName,
+              class: cls,
+              c: cls,
+              string: str,
+              s: str,
               toString: toStringError,
-              ...makeBuilders(cls, str),
             };
           }
 
+          builder.__enss__ = true;
           builder.string = builder.s = classPrefix + condName + afterClass;
           builder.class = builder.c = priorClass + builder.string;
           builder.toString = toStringError;
+
+          // Set en.cond.name:
+          Object.defineProperty(builder, "name", {
+            value: condName,
+            writable: false,
+          });
 
           return [condName, builder];
         })
       );
     }
-    return makeBuilders("", "");
+    return makeBuilders();
   }
 
   const elemClsBuilders = Object.fromEntries(
     Object.entries(elemEnum ?? {}).map(([elemName, elemClass]) => {
+      let space;
       const afterClass =
-        elemClass && elemClass !== elemName ? " " + elemClass : "";
+        elemClass && elemClass !== elemName ? (elemClass as string) : "";
       const classPrefix = baseName ? baseName + elemSep() : "";
 
-      function builder(...args: ENSSArg<ElemEnum, CondEnum>[]) {
-        let str = "";
+      function builder(...args: ENSSArg<CondEnum>[]) {
+        let str = afterClass;
         if (args.length) {
-          str += composeClass<ElemEnum, CondEnum>(
+          const composed = composeClass<CondEnum>(
+            builder,
             config,
             mappings,
             classPrefix + elemName + condSep(),
             args
           );
+          space = str.length && composed.length ? " " : "";
+          str += space + composed;
         }
-        const cls =
-          classPrefix + elemName + afterClass + (str.length ? " " + str : "");
+        let cls = classPrefix + elemName;
+        space = cls.length && str.length && str[0] !== " " ? " " : "";
+        cls += space + str;
         return {
+          __enss__: true,
+          name: elemName,
           class: cls,
           c: cls,
           string: str,
@@ -207,15 +225,23 @@ export default function enss<
         };
       }
 
-      builder.string = builder.s = "";
-      builder.class = builder.c =
-        classPrefix + elemName + afterClass + builder.string;
+      builder.__enss__ = true;
+      builder.string = builder.s = afterClass;
+      const prefix = classPrefix + elemName;
+      space = prefix.length && builder.string.length ? " " : "";
+      builder.class = builder.c = prefix + space + builder.string;
       builder.toString = toStringError;
 
       Object.assign(
         builder,
         makeCondClassBuilders(builder.c, classPrefix + elemName + condSep())
       );
+
+      // Set en.elem.name:
+      Object.defineProperty(builder, "name", {
+        value: elemName,
+        writable: false,
+      });
 
       return [elemName, builder];
     })
@@ -226,15 +252,23 @@ export default function enss<
   const classPrefix = baseName ? baseName + condSep() : "";
 
   // Create top-level ENSS object (en):
-  function mainClsBuilder(...args: ENSSArg<ElemEnum, CondEnum>[]) {
+  function mainClsBuilder(...args: ENSSArg<CondEnum>[]) {
     let str = baseAfterClass;
     if (args.length) {
-      str +=
-        (str.length ? " " : "") +
-        composeClass<ElemEnum, CondEnum>(config, mappings, classPrefix, args);
+      const composed = composeClass<CondEnum>(
+        mainClsBuilder,
+        config,
+        mappings,
+        classPrefix,
+        args
+      );
+      const space = str.length && composed.length ? " " : "";
+      str += space + composed;
     }
     const cls = basePriorClass + (baseName && str.length ? " " : "") + str;
     return {
+      __enss__: true,
+      name: baseName,
       class: cls,
       c: cls,
       string: str,
@@ -243,6 +277,7 @@ export default function enss<
     };
   }
 
+  mainClsBuilder.__enss__ = true;
   mainClsBuilder.class = mainClsBuilder.c =
     basePriorClass + (baseName && baseClass ? " " : "") + baseAfterClass;
   mainClsBuilder.string = mainClsBuilder.s = baseAfterClass;
@@ -280,11 +315,33 @@ export default function enss<
   return mainClsBuilder as unknown as ENSS<NameEnum, ElemEnum, CondEnum>;
 }
 
-export function composeClass<ElemEnum, CondEnum>(
+// resolveENSSArg maps basic cond expressions (eg. en.myCond) to their corresponding
+// namespaced cond expressions (eg. en.myElem.myCond) when composing conditionals:
+// en.myElem(en.myCondA, en.myCondB)
+// This obviates the need to supply fully-namespaced conditionals in this case, eg.
+// en.myElem(en.myElem.myCondA, en.myElem.myCondB)
+export function resolveENSSArg<CondEnum>(
+  builder: ENSSObject,
+  arg: string | ENSSArg<CondEnum>
+): string | ENSSArg<CondEnum> {
+  const { __enss__, __enssCondOff__, name } = arg as ENSSCond;
+  if (__enss__) {
+    const cond = (builder as unknown as Record<string, ENSSCondFunc>)[name];
+    if (cond) {
+      return __enssCondOff__ ? cond(false).string : cond.string;
+    } else {
+      return (arg as ENSSObject).string;
+    }
+  }
+  return arg;
+}
+
+function composeClass<CondEnum>(
+  builder: ENSSObject,
   config: Partial<ENSSConfig>,
   mappings: null | Map<string, string>,
   prefix: string,
-  values: ENSSArg<ElemEnum, CondEnum>[]
+  values: ENSSArg<CondEnum>[]
 ): string {
   let res = "";
   for (const val of values) {
@@ -295,14 +352,8 @@ export function composeClass<ElemEnum, CondEnum>(
         throw new Error(
           "Do not pass strings directly; enclose in object or array"
         );
-      } else if (
-        Object.prototype.hasOwnProperty.call(val, "class") &&
-        Object.prototype.hasOwnProperty.call(val, "c") &&
-        Object.prototype.hasOwnProperty.call(val, "string") &&
-        Object.prototype.hasOwnProperty.call(val, "s")
-      ) {
-        // this is an ENSS expression:
-        const str = (val as ENSSResolvers).string;
+      } else if ((val as ENSSObject)?.__enss__) {
+        const str = resolveENSSArg(builder, val) as string;
         res += str?.length ? " " + str : "";
       } else {
         // this is an Object or Array:
@@ -326,14 +377,14 @@ export function composeClass<ElemEnum, CondEnum>(
             on === true || // only recognize boolean values
             (!config.strictBoolChecks && on) // unless strictBoolChecks=false
           ) {
-            res += " " + prefix + name.trim();
+            res += " " + prefix + name;
             const mappedCls = mappings?.get(name as string);
             if (
               mappedCls?.length &&
               (typeof mappedCls === "string" ||
                 (mappedCls as unknown) instanceof String)
             ) {
-              res += " " + mappedCls.trim();
+              res += " " + mappedCls;
             }
           }
           // Ignore classes associated with all other `on` values, even those
@@ -349,7 +400,7 @@ export function composeClass<ElemEnum, CondEnum>(
   return res.slice(1); // trim off leading space
 }
 
-export function omitEnumReverseMappings<T>(enumObj: T): T {
+function omitEnumReverseMappings<T>(enumObj: T): T {
   return !enumObj
     ? enumObj
     : (Object.fromEntries(
@@ -362,7 +413,7 @@ export function omitEnumReverseMappings<T>(enumObj: T): T {
       ) as T);
 }
 
-export function extractNameEnumData<NameEnum, ElemEnum, CondEnum>(
+function extractNameEnumData<NameEnum, ElemEnum, CondEnum>(
   nameEnum?: null | Record<string, string | number | boolean | null>,
   classMap?: null | ENSSClassMap<NameEnum, ElemEnum, CondEnum>
 ): [string | null, string | null] {

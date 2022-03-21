@@ -70,7 +70,7 @@ describe("ENSS", () => {
       expect(en(["enterprise"]).c).toBe("Ship Ship--enterprise");
       expect(en({ enterprise: true }).c).toBe("Ship Ship--enterprise");
       expect(
-        () => en("enterprise" as unknown as ENSSArg<typeof Elem, typeof Cond>).c
+        () => en("enterprise" as unknown as ENSSArg<typeof Cond>).c
       ).toThrow();
       // We don't allow passing bare strings because that would make it too easy
       // to inadvertantly pass something like en.damaged.s resulting in bad class.
@@ -82,28 +82,25 @@ describe("ENSS", () => {
       expect(en(["enterprise"]).class).toBe("Ship Ship--enterprise");
       expect(en({ enterprise: true }).class).toBe("Ship Ship--enterprise");
       expect(
-        () =>
-          en("enterprise" as unknown as ENSSArg<typeof Elem, typeof Cond>).class
+        () => en("enterprise" as unknown as ENSSArg<typeof Cond>).class
       ).toThrow();
 
-      // Test string resolveer (short version):
+      // Test string resolver (short version):
       expect(en.s).toBe("");
       expect(en().s).toBe("");
       expect(en(["enterprise"]).s).toBe("Ship--enterprise");
       expect(en({ enterprise: true }).s).toBe("Ship--enterprise");
       expect(
-        () => en("enterprise" as unknown as ENSSArg<typeof Elem, typeof Cond>).s
+        () => en("enterprise" as unknown as ENSSArg<typeof Cond>).s
       ).toThrow();
 
-      // Test string resolveer (verbose version):
+      // Test string resolver (verbose version):
       expect(en.string).toBe("");
       expect(en().string).toBe("");
       expect(en(["enterprise"]).string).toBe("Ship--enterprise");
       expect(en({ enterprise: true }).string).toBe("Ship--enterprise");
       expect(
-        () =>
-          en("enterprise" as unknown as ENSSArg<typeof Elem, typeof Cond>)
-            .string
+        () => en("enterprise" as unknown as ENSSArg<typeof Cond>).string
       ).toThrow();
 
       // Should throw: ENSS expressions should never be cast directly to string.
@@ -118,9 +115,7 @@ describe("ENSS", () => {
       expect(en.Ship(["enterprise"]).c).toBe("Ship Ship--enterprise");
       expect(en.Ship({ enterprise: true }).c).toBe("Ship Ship--enterprise");
       expect(
-        () =>
-          en.Ship("enterprise" as unknown as ENSSArg<typeof Elem, typeof Cond>)
-            .c
+        () => en.Ship("enterprise" as unknown as ENSSArg<typeof Cond>).c
       ).toThrow();
       //
       expect(en.Ship.s).toBe("");
@@ -128,9 +123,7 @@ describe("ENSS", () => {
       expect(en.Ship(["enterprise"]).s).toBe("Ship--enterprise");
       expect(en.Ship({ enterprise: true }).s).toBe("Ship--enterprise");
       expect(
-        () =>
-          en.Ship("enterprise" as unknown as ENSSArg<typeof Elem, typeof Cond>)
-            .s
+        () => en.Ship("enterprise" as unknown as ENSSArg<typeof Cond>).s
       ).toThrow();
       //
       expect(() => `${en.Ship}`).toThrow();
@@ -148,8 +141,7 @@ describe("ENSS", () => {
         "Ship-engine Ship-engine--nacelle"
       );
       expect(
-        () =>
-          en.engine("nacelle" as unknown as ENSSArg<typeof Elem, typeof Cond>).c
+        () => en.engine("nacelle" as unknown as ENSSArg<typeof Cond>).c
       ).toThrow();
 
       // Test class resolver (verbose version):
@@ -162,9 +154,7 @@ describe("ENSS", () => {
         "Ship-engine Ship-engine--nacelle"
       );
       expect(
-        () =>
-          en.engine("nacelle" as unknown as ENSSArg<typeof Elem, typeof Cond>)
-            .class
+        () => en.engine("nacelle" as unknown as ENSSArg<typeof Cond>).class
       ).toThrow();
 
       // Test string resolver (short version):
@@ -173,8 +163,7 @@ describe("ENSS", () => {
       expect(en.engine(["nacelle"]).s).toBe("Ship-engine--nacelle");
       expect(en.engine({ nacelle: true }).s).toBe("Ship-engine--nacelle");
       expect(
-        () =>
-          en.engine("nacelle" as unknown as ENSSArg<typeof Elem, typeof Cond>).s
+        () => en.engine("nacelle" as unknown as ENSSArg<typeof Cond>).s
       ).toThrow();
 
       // Test string resolver (verbose version):
@@ -183,9 +172,7 @@ describe("ENSS", () => {
       expect(en.engine(["nacelle"]).string).toBe("Ship-engine--nacelle");
       expect(en.engine({ nacelle: true }).string).toBe("Ship-engine--nacelle");
       expect(
-        () =>
-          en.engine("nacelle" as unknown as ENSSArg<typeof Elem, typeof Cond>)
-            .string
+        () => en.engine("nacelle" as unknown as ENSSArg<typeof Cond>).string
       ).toThrow();
 
       // Should throw: ENSS expressions should never be cast directly to string.
@@ -201,8 +188,7 @@ describe("ENSS", () => {
         "Ship-part Ship-part--warpDrive"
       );
       expect(
-        () =>
-          en.part("warpDrive" as unknown as ENSSArg<typeof Elem, typeof Cond>).c
+        () => en.part("warpDrive" as unknown as ENSSArg<typeof Cond>).c
       ).toThrow();
 
       expect(en.part.s).toBe("");
@@ -210,8 +196,7 @@ describe("ENSS", () => {
       expect(en.part(["warpDrive"]).s).toBe("Ship-part--warpDrive");
       expect(en.part({ warpDrive: true }).s).toBe("Ship-part--warpDrive");
       expect(
-        () =>
-          en.part("warpDrive" as unknown as ENSSArg<typeof Elem, typeof Cond>).c
+        () => en.part("warpDrive" as unknown as ENSSArg<typeof Cond>).c
       ).toThrow();
 
       // Should throw: ENSS expressions should never be cast directly to string.
@@ -229,10 +214,7 @@ describe("ENSS", () => {
         "Ship-engine Ship-engine--nacelle"
       );
       expect(
-        () =>
-          en.Ship.engine(
-            "nacelle" as unknown as ENSSArg<typeof Elem, typeof Cond>
-          ).c
+        () => en.Ship.engine("nacelle" as unknown as ENSSArg<typeof Cond>).c
       ).toThrow();
 
       expect(en.Ship.engine.s).toBe("");
@@ -240,10 +222,7 @@ describe("ENSS", () => {
       expect(en.Ship.engine(["nacelle"]).s).toBe("Ship-engine--nacelle");
       expect(en.Ship.engine({ nacelle: true }).s).toBe("Ship-engine--nacelle");
       expect(
-        () =>
-          en.Ship.engine(
-            "nacelle" as unknown as ENSSArg<typeof Elem, typeof Cond>
-          ).s
+        () => en.Ship.engine("nacelle" as unknown as ENSSArg<typeof Cond>).s
       ).toThrow();
 
       // Should throw: ENSS expressions should never be cast directly to string.
@@ -261,10 +240,7 @@ describe("ENSS", () => {
         "Ship-part Ship-part--warpDrive"
       );
       expect(
-        () =>
-          en.Ship.part(
-            "warpDrive" as unknown as ENSSArg<typeof Elem, typeof Cond>
-          ).c
+        () => en.Ship.part("warpDrive" as unknown as ENSSArg<typeof Cond>).c
       ).toThrow();
 
       expect(en.Ship.part.s).toBe("");
@@ -553,37 +529,33 @@ describe("ENSS", () => {
       expect(en(en.warp(), en.adrift()).c).toBe("Ship Ship--warp Ship--adrift");
       expect(en(en.warp(), en.adrift()).s).toBe("Ship--warp Ship--adrift");
 
-      // Alternatively, chaining (also equivalent to above):
-      expect(en.warp().adrift().c).toBe("Ship Ship--warp Ship--adrift");
-      expect(en.warp().adrift().s).toBe("Ship--warp Ship--adrift");
-
       // Invalid due to string being passed directly:
       expect(
         () =>
           en(
-            en.warp().c as unknown as ENSSArg<typeof Elem, typeof Cond>,
-            en.adrift().c as unknown as ENSSArg<typeof Elem, typeof Cond>
+            en.warp().c as unknown as ENSSArg<typeof Cond>,
+            en.adrift().c as unknown as ENSSArg<typeof Cond>
           ).c
       ).toThrow();
       expect(
         () =>
           en(
-            en.warp().s as unknown as ENSSArg<typeof Elem, typeof Cond>,
-            en.adrift().s as unknown as ENSSArg<typeof Elem, typeof Cond>
+            en.warp().s as unknown as ENSSArg<typeof Cond>,
+            en.adrift().s as unknown as ENSSArg<typeof Cond>
           ).s
       ).toThrow();
       expect(
         () =>
           en(
-            en.warp().c as unknown as ENSSArg<typeof Elem, typeof Cond>,
-            en.adrift().s as unknown as ENSSArg<typeof Elem, typeof Cond>
+            en.warp().c as unknown as ENSSArg<typeof Cond>,
+            en.adrift().s as unknown as ENSSArg<typeof Cond>
           ).c
       ).toThrow();
       expect(
         () =>
           en(
-            en.warp().s as unknown as ENSSArg<typeof Elem, typeof Cond>,
-            en.adrift().c as unknown as ENSSArg<typeof Elem, typeof Cond>
+            en.warp().s as unknown as ENSSArg<typeof Cond>,
+            en.adrift().c as unknown as ENSSArg<typeof Cond>
           ).s
       ).toThrow();
 
@@ -608,26 +580,6 @@ describe("ENSS", () => {
       expect(() => `${en(en.warp(true), en.adrift(false))}`).toThrow();
       expect(() => `${en(en.warp(false), en.adrift(false))}`).toThrow();
       expect(() => `${en(en.warp(0), en.adrift("at space"))}`).toThrow();
-
-      // Equivalent to above (chain composition):
-      expect(en.warp(true).adrift(true).c).toBe("Ship Ship--warp Ship--adrift");
-      expect(en.warp(true).adrift(false).c).toBe("Ship Ship--warp");
-      expect(en.warp(false).adrift(false).c).toBe("Ship");
-      expect(en.warp(0).adrift("at space").c).toBe("Ship");
-      // all non-bool values ignored unless config.strictBoolChecks=false
-
-      // Equivalent to above (chain composition):
-      expect(en.warp(true).adrift(true).s).toBe("Ship--warp Ship--adrift");
-      expect(en.warp(true).adrift(false).s).toBe("Ship--warp");
-      expect(en.warp(false).adrift(false).s).toBe("");
-      expect(en.warp(0).adrift("at space").s).toBe("");
-      // all non-bool values ignored unless config.strictBoolChecks=false
-
-      // Should throw: ENSS expressions should never be cast directly to string.
-      expect(() => `${en.warp(true).adrift(true)}`).toThrow();
-      expect(() => `${en.warp(true).adrift(false)}`).toThrow();
-      expect(() => `${en.warp(false).adrift(false)}`).toThrow();
-      expect(() => `${en.warp(0).adrift("at space")}`).toThrow();
 
       // Equivalent to above (object composition):
       expect(en({ warp: true, adrift: true }).c).toBe(
@@ -670,41 +622,33 @@ describe("ENSS", () => {
         "Ship-part--warp Ship-part--adrift"
       );
 
-      // Also quivalent to above (chain composition):
-      expect(en.part.warp().adrift().c).toBe(
-        "Ship-part Ship-part--warp Ship-part--adrift"
-      );
-      expect(en.part.warp().adrift().s).toBe(
-        "Ship-part--warp Ship-part--adrift"
-      );
-
       // Invalid due to string being passed directly:
       expect(
         () =>
           en.part(
-            en.warp().c as unknown as ENSSArg<typeof Elem, typeof Cond>,
-            en.adrift().c as unknown as ENSSArg<typeof Elem, typeof Cond>
+            en.warp().c as unknown as ENSSArg<typeof Cond>,
+            en.adrift().c as unknown as ENSSArg<typeof Cond>
           ).c
       ).toThrow();
       expect(
         () =>
           en.part(
-            en.warp().s as unknown as ENSSArg<typeof Elem, typeof Cond>,
-            en.adrift().s as unknown as ENSSArg<typeof Elem, typeof Cond>
+            en.warp().s as unknown as ENSSArg<typeof Cond>,
+            en.adrift().s as unknown as ENSSArg<typeof Cond>
           ).s
       ).toThrow();
       expect(
         () =>
           en.part(
-            en.warp().c as unknown as ENSSArg<typeof Elem, typeof Cond>,
-            en.adrift().s as unknown as ENSSArg<typeof Elem, typeof Cond>
+            en.warp().c as unknown as ENSSArg<typeof Cond>,
+            en.adrift().s as unknown as ENSSArg<typeof Cond>
           ).c
       ).toThrow();
       expect(
         () =>
           en.part(
-            en.warp().s as unknown as ENSSArg<typeof Elem, typeof Cond>,
-            en.adrift().c as unknown as ENSSArg<typeof Elem, typeof Cond>
+            en.warp().s as unknown as ENSSArg<typeof Cond>,
+            en.adrift().c as unknown as ENSSArg<typeof Cond>
           ).s
       ).toThrow();
 
@@ -733,32 +677,6 @@ describe("ENSS", () => {
       expect(() => `${en.part(en.warp(true), en.adrift(false))}`).toThrow();
       expect(() => `${en.part(en.warp(false), en.adrift(false))}`).toThrow();
       expect(() => `${en.part(en.warp(0), en.adrift("at space"))}`).toThrow();
-
-      // Equivalent to above (chain composition):
-      expect(en.part.warp(true).adrift(true).c).toBe(
-        "Ship-part Ship-part--warp Ship-part--adrift"
-      );
-      expect(en.part.warp(true).adrift(false).c).toBe(
-        "Ship-part Ship-part--warp"
-      );
-      expect(en.part.warp(false).adrift(false).c).toBe("Ship-part");
-      expect(en.part.warp(0).adrift("at space").c).toBe("Ship-part");
-      // all non-bool values ignored unless config.strictBoolChecks=false
-
-      // Equivalent to above (chain composition):
-      expect(en.part.warp(true).adrift(true).s).toBe(
-        "Ship-part--warp Ship-part--adrift"
-      );
-      expect(en.part.warp(true).adrift(false).s).toBe("Ship-part--warp");
-      expect(en.part.warp(false).adrift(false).s).toBe("");
-      expect(en.part.warp(0).adrift("at space").s).toBe("");
-      // all non-bool values ignored unless config.strictBoolChecks=false
-
-      // Should throw: ENSS expressions should never be cast directly to string.
-      expect(() => `${en.part.warp(true).adrift(true)}`).toThrow();
-      expect(() => `${en.part.warp(true).adrift(false)}`).toThrow();
-      expect(() => `${en.part.warp(false).adrift(false)}`).toThrow();
-      expect(() => `${en.part.warp(0).adrift("at space")}`).toThrow();
 
       // Equivalent to above (object composition):
       expect(en.part({ warp: true, adrift: true }).c).toBe(
@@ -871,14 +789,14 @@ describe("ENSS", () => {
         >(NameMapped, ElemMapped, CondMapped);
 
         expect(en(en.warp, en.adrift).c).toBe(
-          "Ship abc Ship--warp mno Ship--adrift jkl"
+          "Ship abc Ship--warp jkl Ship--adrift mno"
         );
         expect(en(en.warp(), en.adrift()).c).toBe(
-          "Ship abc Ship--warp mno Ship--adrift jkl"
+          "Ship abc Ship--warp jkl Ship--adrift mno"
         );
 
         expect(en(en.warp(true), en.adrift(true)).c).toBe(
-          "Ship abc Ship--warp mno Ship--adrift jkl"
+          "Ship abc Ship--warp jkl Ship--adrift mno"
         );
         expect(en(en.warp(true), en.adrift(false)).c).toBe(
           "Ship abc Ship--warp jkl"
@@ -1231,7 +1149,7 @@ describe("ENSS", () => {
       CondObjMapped,
     ],
   ])(
-    "ommission :: %s",
+    "omission :: %s",
     (_, Name, Elem, Cond, NameMapped, ElemMapped, CondMapped) => {
       test("omit base name", () => {
         const en = enss<object, typeof ElemMapped, typeof CondMapped>(
@@ -1255,8 +1173,8 @@ describe("ENSS", () => {
         expect(en.part.warp(false).c /*-*/).toBe("part ghi");
 
         expect(en.s).toBe("");
-        expect(en.engine.s).toBe("engine def");
-        expect(en.part.s).toBe("part ghi");
+        expect(en.engine.s).toBe("def");
+        expect(en.part.s).toBe("ghi");
         expect(en.warp.s /*-------------*/).toBe("warp jkl");
         expect(en.warp().s /*-----------*/).toBe("warp jkl");
         expect(en.warp(true).s /*-------*/).toBe("warp jkl");
@@ -1285,8 +1203,8 @@ describe("ENSS", () => {
         expect(en.Ship.adrift(true).c /*--*/).toBe("Ship abc Ship--adrift mno");
         expect(en.Ship.adrift(false).c /*-*/).toBe("Ship abc");
 
-        expect(en.s).toBe("Ship abc");
-        expect(en.Ship.s).toBe("Ship abc");
+        expect(en.s).toBe("abc");
+        expect(en.Ship.s).toBe("abc");
         expect(en.warp.s /*---------------*/).toBe("Ship--warp jkl");
         expect(en.warp().s /*-------------*/).toBe("Ship--warp jkl");
         expect(en.adrift(true).s /*-------*/).toBe("Ship--adrift mno");
@@ -1315,8 +1233,8 @@ describe("ENSS", () => {
         expect(en.Ship.adrift(true).c /*--*/).toBe("Ship abc Ship--adrift");
         expect(en.Ship.adrift(false).c /*-*/).toBe("Ship abc");
 
-        expect(en.s).toBe("Ship abc");
-        expect(en.Ship.s).toBe("Ship abc");
+        expect(en.s).toBe("abc");
+        expect(en.Ship.s).toBe("abc");
         expect(en.warp.s /*---------------*/).toBe("Ship--warp jkl");
         expect(en.warp().s /*-------------*/).toBe("Ship--warp jkl");
         expect(en.adrift(true).s /*-------*/).toBe("Ship--adrift");
@@ -1340,12 +1258,12 @@ describe("ENSS", () => {
         expect(en.Ship.engine.c).toBe("Ship-engine def");
         expect(en.Ship.part.c).toBe("Ship-part ghi");
 
-        expect(en.s).toBe("Ship abc");
-        expect(en.engine.s).toBe("Ship-engine def");
-        expect(en.part.s).toBe("Ship-part ghi");
-        expect(en.Ship.s).toBe("Ship abc");
-        expect(en.Ship.engine.s).toBe("Ship-engine def");
-        expect(en.Ship.part.s).toBe("Ship-part ghi");
+        expect(en.s).toBe("abc");
+        expect(en.engine.s).toBe("def");
+        expect(en.part.s).toBe("ghi");
+        expect(en.Ship.s).toBe("abc");
+        expect(en.Ship.engine.s).toBe("def");
+        expect(en.Ship.part.s).toBe("ghi");
       });
 
       test("omit conditionals + class mappings via map object", () => {
@@ -1362,12 +1280,12 @@ describe("ENSS", () => {
         expect(en.Ship.engine.c).toBe("Ship-engine def");
         expect(en.Ship.part.c).toBe("Ship-part ghi");
 
-        expect(en.s).toBe("Ship abc");
-        expect(en.engine.s).toBe("Ship-engine def");
-        expect(en.part.s).toBe("Ship-part ghi");
-        expect(en.Ship.s).toBe("Ship abc");
-        expect(en.Ship.engine.s).toBe("Ship-engine def");
-        expect(en.Ship.part.s).toBe("Ship-part ghi");
+        expect(en.s).toBe("abc");
+        expect(en.engine.s).toBe("def");
+        expect(en.part.s).toBe("ghi");
+        expect(en.Ship.s).toBe("abc");
+        expect(en.Ship.engine.s).toBe("def");
+        expect(en.Ship.part.s).toBe("ghi");
       });
     }
   );
