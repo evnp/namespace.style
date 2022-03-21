@@ -51,13 +51,11 @@ export type ENSSClassMap<NameEnum, ElemEnum, CondEnum> = Partial<
 export type ENSSConfig = {
   elementSeparator: string;
   conditionalSeparator: string;
-  strictBoolChecks: boolean;
 };
 
 const defaultConfig: ENSSConfig = {
   elementSeparator: "-",
   conditionalSeparator: "--",
-  strictBoolChecks: true,
 };
 
 const config = { ...defaultConfig };
@@ -148,11 +146,7 @@ export default function enss<
             let str: string;
             let cls: string;
             let __enssCondOff__;
-            if (
-              !arguments.length ||
-              on === true || // only recognize boolean values
-              (!config.strictBoolChecks && on) // unless strictBoolChecks=false
-            ) {
+            if (!arguments.length || on) {
               __enssCondOff__ = false;
               str = classPrefix + condName + afterClass;
               cls = priorClass + str;
@@ -203,7 +197,6 @@ export default function enss<
         if (args.length) {
           const composed = composeClass<CondEnum>(
             builder,
-            config,
             mappings,
             classPrefix + elemName + condSep(),
             args
@@ -257,7 +250,6 @@ export default function enss<
     if (args.length) {
       const composed = composeClass<CondEnum>(
         mainClsBuilder,
-        config,
         mappings,
         classPrefix,
         args
@@ -338,7 +330,6 @@ export function resolveENSSArg<CondEnum>(
 
 function composeClass<CondEnum>(
   builder: ENSSObject,
-  config: Partial<ENSSConfig>,
   mappings: null | Map<string, string>,
   prefix: string,
   values: ENSSArg<CondEnum>[]
@@ -373,10 +364,7 @@ function composeClass<CondEnum>(
           }
         }
         for (const [name, on] of entries) {
-          if (
-            on === true || // only recognize boolean values
-            (!config.strictBoolChecks && on) // unless strictBoolChecks=false
-          ) {
+          if (on) {
             res += " " + prefix + name;
             const mappedCls = mappings?.get(name as string);
             if (

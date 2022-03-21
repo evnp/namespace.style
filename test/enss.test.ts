@@ -279,19 +279,19 @@ describe("ENSS", () => {
       expect(en.warp(true).c /*---------*/).toBe("Ship Ship--warp");
       expect(en.warp(false).c /*--------*/).toBe("Ship");
       expect(en.warp(0).c /*------------*/).toBe("Ship");
-      expect(en.warp(1).c /*------------*/).toBe("Ship");
+      expect(en.warp(1).c /*------------*/).toBe("Ship Ship--warp");
       expect(en.warp(null).c /*---------*/).toBe("Ship");
       expect(en.warp(undefined).c /*----*/).toBe("Ship");
-      expect(en.warp("klingon").c /*----*/).toBe("Ship");
+      expect(en.warp("klingon").c /*----*/).toBe("Ship Ship--warp");
       expect(en.warp("").c /*-----------*/).toBe("Ship");
 
       expect(en.warp(true).s /*---------*/).toBe("Ship--warp");
       expect(en.warp(false).s /*--------*/).toBe("");
       expect(en.warp(0).s /*------------*/).toBe("");
-      expect(en.warp(1).s /*------------*/).toBe("");
+      expect(en.warp(1).s /*------------*/).toBe("Ship--warp");
       expect(en.warp(null).s /*---------*/).toBe("");
       expect(en.warp(undefined).s /*----*/).toBe("");
-      expect(en.warp("klingon").s /*----*/).toBe("");
+      expect(en.warp("klingon").s /*----*/).toBe("Ship--warp");
       expect(en.warp("").s /*-----------*/).toBe("");
 
       // Should throw: ENSS expressions should never be cast directly to string.
@@ -317,19 +317,19 @@ describe("ENSS", () => {
       expect(en.adrift(true).c /*-------*/).toBe("Ship Ship--adrift");
       expect(en.adrift(false).c /*------*/).toBe("Ship");
       expect(en.adrift(0).c /*----------*/).toBe("Ship");
-      expect(en.adrift(1).c /*----------*/).toBe("Ship");
+      expect(en.adrift(1).c /*----------*/).toBe("Ship Ship--adrift");
       expect(en.adrift(null).c /*-------*/).toBe("Ship");
       expect(en.adrift(undefined).c /*--*/).toBe("Ship");
-      expect(en.adrift("damaged").c /*--*/).toBe("Ship");
+      expect(en.adrift("damaged").c /*--*/).toBe("Ship Ship--adrift");
       expect(en.adrift("").c /*---------*/).toBe("Ship");
 
       expect(en.adrift(true).s /*-------*/).toBe("Ship--adrift");
       expect(en.adrift(false).s /*------*/).toBe("");
       expect(en.adrift(0).s /*----------*/).toBe("");
-      expect(en.adrift(1).s /*----------*/).toBe("");
+      expect(en.adrift(1).s /*----------*/).toBe("Ship--adrift");
       expect(en.adrift(null).s /*-------*/).toBe("");
       expect(en.adrift(undefined).s /*--*/).toBe("");
-      expect(en.adrift("damaged").s /*--*/).toBe("");
+      expect(en.adrift("damaged").s /*--*/).toBe("Ship--adrift");
       expect(en.adrift("").s /*---------*/).toBe("");
 
       // Should throw: ENSS expressions should never be cast directly to string.
@@ -390,10 +390,10 @@ describe("ENSS", () => {
       expect(en.part.warp(true).c /*------*/).toBe("Ship-part Ship-part--warp");
       expect(en.part.warp(false).c /*-----*/).toBe("Ship-part");
       expect(en.part.warp(0).c /*---------*/).toBe("Ship-part");
-      expect(en.part.warp(1).c /*---------*/).toBe("Ship-part");
+      expect(en.part.warp(1).c /*---------*/).toBe("Ship-part Ship-part--warp");
       expect(en.part.warp(null).c /*------*/).toBe("Ship-part");
       expect(en.part.warp(undefined).c /*-*/).toBe("Ship-part");
-      expect(en.part.warp("klingon").c /*-*/).toBe("Ship-part");
+      expect(en.part.warp("klingon").c /*-*/).toBe("Ship-part Ship-part--warp");
       expect(en.part.warp("").c /*--------*/).toBe("Ship-part");
 
       // Test class resolver (verbose version):
@@ -402,10 +402,10 @@ describe("ENSS", () => {
       expect(en.part.warp(true).class /*--*/).toBe("Ship-part Ship-part--warp");
       expect(en.part.warp(false).class /*-*/).toBe("Ship-part");
       expect(en.part.warp(0).class /*-----*/).toBe("Ship-part");
-      expect(en.part.warp(1).class /*-----*/).toBe("Ship-part");
+      expect(en.part.warp(1).class /*-----*/).toBe("Ship-part Ship-part--warp");
       expect(en.part.warp(null).class /*--*/).toBe("Ship-part");
       expect(en.part.warp(undefined).class).toBe("Ship-part");
-      expect(en.part.warp("klingon").class).toBe("Ship-part");
+      expect(en.part.warp("klingon").class).toBe("Ship-part Ship-part--warp");
       expect(en.part.warp("").class /*----*/).toBe("Ship-part");
 
       // Test string resolver (short version):
@@ -414,10 +414,10 @@ describe("ENSS", () => {
       expect(en.part.warp(true).s /*------*/).toBe("Ship-part--warp");
       expect(en.part.warp(false).s /*-----*/).toBe("");
       expect(en.part.warp(0).s /*---------*/).toBe("");
-      expect(en.part.warp(1).s /*---------*/).toBe("");
+      expect(en.part.warp(1).s /*---------*/).toBe("Ship-part--warp");
       expect(en.part.warp(null).s /*------*/).toBe("");
       expect(en.part.warp(undefined).s /*-*/).toBe("");
-      expect(en.part.warp("klingon").s /*-*/).toBe("");
+      expect(en.part.warp("klingon").s /*-*/).toBe("Ship-part--warp");
       expect(en.part.warp("").s /*--------*/).toBe("");
 
       // Test string resolver (verbose version):
@@ -426,10 +426,10 @@ describe("ENSS", () => {
       expect(en.part.warp(true).string /*--*/).toBe("Ship-part--warp");
       expect(en.part.warp(false).string /*-*/).toBe("");
       expect(en.part.warp(0).string /*-----*/).toBe("");
-      expect(en.part.warp(1).string /*-----*/).toBe("");
+      expect(en.part.warp(1).string /*-----*/).toBe("Ship-part--warp");
       expect(en.part.warp(null).string /*--*/).toBe("");
       expect(en.part.warp(undefined).string).toBe("");
-      expect(en.part.warp("klingon").string).toBe("");
+      expect(en.part.warp("klingon").string).toBe("Ship-part--warp");
       expect(en.part.warp("").string /*----*/).toBe("");
 
       // Should throw: ENSS expressions should never be cast directly to string.
@@ -455,10 +455,12 @@ describe("ENSS", () => {
       );
       expect(en.part.adrift(false).c /*---*/).toBe("Ship-part");
       expect(en.part.adrift(0).c /*-------*/).toBe("Ship-part");
-      expect(en.part.adrift(1).c /*-------*/).toBe("Ship-part");
+      expect(en.part.adrift(1).c /*-------*/).toBe(
+        "Ship-part Ship-part--adrift"
+      );
       expect(en.part.adrift(null).c /*----*/).toBe("Ship-part");
       expect(en.part.adrift(undefined).c).toBe("Ship-part");
-      expect(en.part.adrift("klingon").c).toBe("Ship-part");
+      expect(en.part.adrift("klingon").c).toBe("Ship-part Ship-part--adrift");
       expect(en.part.adrift("").c /*------*/).toBe("Ship-part");
 
       expect(en.part.adrift.s /*----------*/).toBe("Ship-part--adrift");
@@ -466,10 +468,10 @@ describe("ENSS", () => {
       expect(en.part.adrift(true).s /*----*/).toBe("Ship-part--adrift");
       expect(en.part.adrift(false).s /*---*/).toBe("");
       expect(en.part.adrift(0).s /*-------*/).toBe("");
-      expect(en.part.adrift(1).s /*-------*/).toBe("");
+      expect(en.part.adrift(1).s /*-------*/).toBe("Ship-part--adrift");
       expect(en.part.adrift(null).s /*----*/).toBe("");
       expect(en.part.adrift(undefined).s).toBe("");
-      expect(en.part.adrift("klingon").s).toBe("");
+      expect(en.part.adrift("klingon").s).toBe("Ship-part--adrift");
       expect(en.part.adrift("").s /*------*/).toBe("");
 
       // Should throw: ENSS expressions should never be cast directly to string.
@@ -564,15 +566,14 @@ describe("ENSS", () => {
       );
       expect(en(en.warp(true), en.adrift(false)).c).toBe("Ship Ship--warp");
       expect(en(en.warp(false), en.adrift(false)).c).toBe("Ship");
-      expect(en(en.warp(0), en.adrift("at space")).c).toBe("Ship");
-      // all non-bool values ignored unless config.strictBoolChecks=false
+      expect(en(en.warp(0), en.adrift("at space")).c).toBe("Ship Ship--adrift");
 
       expect(en(en.warp(true), en.adrift(true)).s).toBe(
         "Ship--warp Ship--adrift"
       );
       expect(en(en.warp(true), en.adrift(false)).s).toBe("Ship--warp");
       expect(en(en.warp(false), en.adrift(false)).s).toBe("");
-      expect(en(en.warp(0), en.adrift("at space")).s).toBe("");
+      expect(en(en.warp(0), en.adrift("at space")).s).toBe("Ship--adrift");
       // all non-bool values ignored unless config.strictBoolChecks=false
 
       // Should throw: ENSS expressions should never be cast directly to string.
@@ -587,7 +588,7 @@ describe("ENSS", () => {
       );
       expect(en({ warp: true, adrift: false }).c).toBe("Ship Ship--warp");
       expect(en({ warp: false, adrift: false }).c).toBe("Ship");
-      expect(en({ warp: 0, adrift: "at space" }).c).toBe("Ship");
+      expect(en({ warp: 0, adrift: "at space" }).c).toBe("Ship Ship--adrift");
       // all non-bool values ignored unless config.strictBoolChecks=false
 
       // Equivalent to above (object composition):
@@ -596,7 +597,7 @@ describe("ENSS", () => {
       );
       expect(en({ warp: true, adrift: false }).s).toBe("Ship--warp");
       expect(en({ warp: false, adrift: false }).s).toBe("");
-      expect(en({ warp: 0, adrift: "at space" }).s).toBe("");
+      expect(en({ warp: 0, adrift: "at space" }).s).toBe("Ship--adrift");
       // all non-bool values ignored unless config.strictBoolChecks=false
 
       // Should throw: ENSS expressions should never be cast directly to string.
@@ -659,7 +660,9 @@ describe("ENSS", () => {
         "Ship-part Ship-part--warp"
       );
       expect(en.part(en.warp(false), en.adrift(false)).c).toBe("Ship-part");
-      expect(en.part(en.warp(0), en.adrift("at space")).c).toBe("Ship-part");
+      expect(en.part(en.warp(0), en.adrift("at space")).c).toBe(
+        "Ship-part Ship-part--adrift"
+      );
       // all non-bool values ignored unless config.strictBoolChecks=false
 
       expect(en.part(en.warp(true), en.adrift(true)).s).toBe(
@@ -669,7 +672,9 @@ describe("ENSS", () => {
         "Ship-part--warp"
       );
       expect(en.part(en.warp(false), en.adrift(false)).s).toBe("");
-      expect(en.part(en.warp(0), en.adrift("at space")).s).toBe("");
+      expect(en.part(en.warp(0), en.adrift("at space")).s).toBe(
+        "Ship-part--adrift"
+      );
       // all non-bool values ignored unless config.strictBoolChecks=false
 
       // Should throw: ENSS expressions should never be cast directly to string.
@@ -686,7 +691,9 @@ describe("ENSS", () => {
         "Ship-part Ship-part--warp"
       );
       expect(en.part({ warp: false, adrift: false }).c).toBe("Ship-part");
-      expect(en.part({ warp: 0, adrift: "at space" }).c).toBe("Ship-part");
+      expect(en.part({ warp: 0, adrift: "at space" }).c).toBe(
+        "Ship-part Ship-part--adrift"
+      );
       // all non-bool values ignored unless config.strictBoolChecks=false
 
       // Equivalent to above (object composition):
@@ -695,7 +702,9 @@ describe("ENSS", () => {
       );
       expect(en.part({ warp: true, adrift: false }).s).toBe("Ship-part--warp");
       expect(en.part({ warp: false, adrift: false }).s).toBe("");
-      expect(en.part({ warp: 0, adrift: "at space" }).s).toBe("");
+      expect(en.part({ warp: 0, adrift: "at space" }).s).toBe(
+        "Ship-part--adrift"
+      );
       // all non-bool values ignored unless config.strictBoolChecks=false
 
       // Should throw: ENSS expressions should never be cast directly to string.
@@ -802,7 +811,9 @@ describe("ENSS", () => {
           "Ship abc Ship--warp jkl"
         );
         expect(en(en.warp(false), en.adrift(false)).c).toBe("Ship abc");
-        expect(en(en.warp(0), en.adrift("at space")).c).toBe("Ship abc");
+        expect(en(en.warp(0), en.adrift("at space")).c).toBe(
+          "Ship abc Ship--adrift mno"
+        );
         // all non-bool values ignored unless config.strictBoolChecks=false
 
         expect(en({ warp: true, adrift: true }).c).toBe(
@@ -812,7 +823,9 @@ describe("ENSS", () => {
           "Ship abc Ship--warp jkl"
         );
         expect(en({ warp: false, adrift: false }).c).toBe("Ship abc");
-        expect(en({ warp: 0, adrift: "at space" }).c).toBe("Ship abc");
+        expect(en({ warp: 0, adrift: "at space" }).c).toBe(
+          "Ship abc Ship--adrift mno"
+        );
         // all non-bool values ignored unless config.strictBoolChecks=false
 
         expect(en.part(en.warp, en.adrift).c).toBe(
@@ -832,7 +845,7 @@ describe("ENSS", () => {
           "Ship-part ghi"
         );
         expect(en.part(en.warp(0), en.adrift("at space")).c).toBe(
-          "Ship-part ghi"
+          "Ship-part ghi Ship-part--adrift mno"
         );
         // all non-bool values ignored unless config.strictBoolChecks=false
 
@@ -844,7 +857,7 @@ describe("ENSS", () => {
         );
         expect(en.part({ warp: false, adrift: false }).c).toBe("Ship-part ghi");
         expect(en.part({ warp: 0, adrift: "at space" }).c).toBe(
-          "Ship-part ghi"
+          "Ship-part ghi Ship-part--adrift mno"
         );
         // all non-bool values ignored unless config.strictBoolChecks=false
       });
@@ -938,7 +951,9 @@ describe("ENSS", () => {
           "Ship abc Ship--warp jkl"
         );
         expect(en(en.warp(false), en.adrift(false)).c).toBe("Ship abc");
-        expect(en(en.warp(0), en.adrift("at space")).c).toBe("Ship abc");
+        expect(en(en.warp(0), en.adrift("at space")).c).toBe(
+          "Ship abc Ship--adrift mno"
+        );
         // all non-bool values ignored unless config.strictBoolChecks=false
 
         expect(en({ warp: true, adrift: true }).c).toBe(
@@ -948,7 +963,9 @@ describe("ENSS", () => {
           "Ship abc Ship--warp jkl"
         );
         expect(en({ warp: false, adrift: false }).c).toBe("Ship abc");
-        expect(en({ warp: 0, adrift: "at space" }).c).toBe("Ship abc");
+        expect(en({ warp: 0, adrift: "at space" }).c).toBe(
+          "Ship abc Ship--adrift mno"
+        );
         // all non-bool values ignored unless config.strictBoolChecks=false
 
         expect(en.part(en.warp, en.adrift).c).toBe(
@@ -968,7 +985,7 @@ describe("ENSS", () => {
           "Ship-part ghi"
         );
         expect(en.part(en.warp(0), en.adrift("at space")).c).toBe(
-          "Ship-part ghi"
+          "Ship-part ghi Ship-part--adrift mno"
         );
         // all non-bool values ignored unless config.strictBoolChecks=false
 
@@ -980,7 +997,7 @@ describe("ENSS", () => {
         );
         expect(en.part({ warp: false, adrift: false }).c).toBe("Ship-part ghi");
         expect(en.part({ warp: 0, adrift: "at space" }).c).toBe(
-          "Ship-part ghi"
+          "Ship-part ghi Ship-part--adrift mno"
         );
         // all non-bool values ignored unless config.strictBoolChecks=false
       });
@@ -1080,7 +1097,9 @@ describe("ENSS", () => {
           "Ship abc Ship--warp jkl"
         );
         expect(en(en.warp(false), en.adrift(false)).c).toBe("Ship abc");
-        expect(en(en.warp(0), en.adrift("at space")).c).toBe("Ship abc");
+        expect(en(en.warp(0), en.adrift("at space")).c).toBe(
+          "Ship abc Ship--adrift mno"
+        );
         // all non-bool values ignored unless config.strictBoolChecks=false
 
         expect(en({ warp: true, adrift: true }).c).toBe(
@@ -1090,7 +1109,9 @@ describe("ENSS", () => {
           "Ship abc Ship--warp jkl"
         );
         expect(en({ warp: false, adrift: false }).c).toBe("Ship abc");
-        expect(en({ warp: 0, adrift: "at space" }).c).toBe("Ship abc");
+        expect(en({ warp: 0, adrift: "at space" }).c).toBe(
+          "Ship abc Ship--adrift mno"
+        );
         // all non-bool values ignored unless config.strictBoolChecks=false
 
         expect(en.part(en.warp, en.adrift).c).toBe(
@@ -1110,7 +1131,7 @@ describe("ENSS", () => {
           "Ship-part ghi"
         );
         expect(en.part(en.warp(0), en.adrift("at space")).c).toBe(
-          "Ship-part ghi"
+          "Ship-part ghi Ship-part--adrift mno"
         );
         // all non-bool values ignored unless config.strictBoolChecks=false
 
@@ -1122,7 +1143,7 @@ describe("ENSS", () => {
         );
         expect(en.part({ warp: false, adrift: false }).c).toBe("Ship-part ghi");
         expect(en.part({ warp: 0, adrift: "at space" }).c).toBe(
-          "Ship-part ghi"
+          "Ship-part ghi Ship-part--adrift mno"
         );
         // all non-bool values ignored unless config.strictBoolChecks=false
       });
@@ -1295,7 +1316,6 @@ describe("ENSS", () => {
       enss.configure({
         elementSeparator: "__",
         conditionalSeparator: ":::",
-        strictBoolChecks: false,
       });
     });
 
@@ -1367,26 +1387,6 @@ describe("ENSS", () => {
       expect(en.Ship.part.warp(false).c).toBe("Ship__part ghi");
     });
 
-    test("strict bool checks", () => {
-      enum Name {
-        Ship = "abc",
-      }
-      enum Elem {
-        engine = "def",
-        part = "ghi",
-      }
-      enum Cond {
-        warp = "jkl",
-      }
-
-      const en = enss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond);
-
-      expect(en.warp.c /*-------------*/).toBe("Ship abc Ship:::warp jkl");
-      expect(en.warp().c /*-----------*/).toBe("Ship abc Ship:::warp jkl");
-      expect(en.warp("proton torpedo").c).toBe("Ship abc Ship:::warp jkl");
-      expect(en.warp(0).c /*----------*/).toBe("Ship abc");
-    });
-
     test("reset", () => {
       enum Name {
         Ship = "abc",
@@ -1405,7 +1405,7 @@ describe("ENSS", () => {
 
       expect(en.warp.c /*-------------*/).toBe("Ship abc Ship--warp jkl");
       expect(en.warp().c /*-----------*/).toBe("Ship abc Ship--warp jkl");
-      expect(en.warp("proton torpedo").c).toBe("Ship abc");
+      expect(en.warp("proton torpedo").c).toBe("Ship abc Ship--warp jkl");
       expect(en.warp(0).c /*----------*/).toBe("Ship abc");
     });
   });
