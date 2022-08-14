@@ -1,11 +1,11 @@
-export type ENSS<NameEnum, ElemEnum, CondEnum> = {
-  [key in keyof NameEnum]: ENSSBaseFunc<ElemEnum, CondEnum>;
+export type NSS<NameEnum, ElemEnum, CondEnum> = {
+  [key in keyof NameEnum]: NSSBaseFunc<ElemEnum, CondEnum>;
 } & {
-  mapClasses: () => ENSS<NameEnum, ElemEnum, CondEnum>;
-} & ENSSBaseFunc<ElemEnum, CondEnum>;
+  mapClasses: () => NSS<NameEnum, ElemEnum, CondEnum>;
+} & NSSBaseFunc<ElemEnum, CondEnum>;
 
-export type ENSSObject = {
-  __enss__: boolean;
+export type NSSObject = {
+  __nss__: boolean;
   name: string;
   class: string;
   c: string;
@@ -14,46 +14,46 @@ export type ENSSObject = {
   toString: () => string;
 };
 
-export type ENSSBase<ElemEnum, CondEnum> = {
-  [key in keyof ElemEnum]: ENSSElemFunc<CondEnum>;
+export type NSSBase<ElemEnum, CondEnum> = {
+  [key in keyof ElemEnum]: NSSElemFunc<CondEnum>;
 } & {
-  [key in keyof CondEnum]: ENSSCondFunc;
-} & ENSSCond;
+  [key in keyof CondEnum]: NSSCondFunc;
+} & NSSCond;
 
-export type ENSSElem<CondEnum> = {
-  [key in keyof CondEnum]: ENSSCondFunc;
-} & ENSSObject;
+export type NSSElem<CondEnum> = {
+  [key in keyof CondEnum]: NSSCondFunc;
+} & NSSObject;
 
-export type ENSSCond = ENSSObject & {
-  __enssCondOff__?: boolean;
+export type NSSCond = NSSObject & {
+  __nssCondOff__?: boolean;
 };
 
-export type ENSSBaseFunc<ElemEnum, CondEnum> = ENSSBase<ElemEnum, CondEnum> &
-  ((...args: ENSSArg<CondEnum>[]) => ENSSElem<CondEnum>);
+export type NSSBaseFunc<ElemEnum, CondEnum> = NSSBase<ElemEnum, CondEnum> &
+  ((...args: NSSArg<CondEnum>[]) => NSSElem<CondEnum>);
 
-export type ENSSElemFunc<CondEnum> = ENSSElem<CondEnum> &
-  ((...args: ENSSArg<CondEnum>[]) => ENSSCond);
+export type NSSElemFunc<CondEnum> = NSSElem<CondEnum> &
+  ((...args: NSSArg<CondEnum>[]) => NSSCond);
 
-export type ENSSCondFunc = ENSSCond & ((on?: unknown) => ENSSCond);
+export type NSSCondFunc = NSSCond & ((on?: unknown) => NSSCond);
 
-export type ENSSArg<CondEnum> =
-  | ENSSElem<CondEnum>
-  | ENSSElemFunc<CondEnum>
-  | ENSSCond
-  | ENSSCondFunc
+export type NSSArg<CondEnum> =
+  | NSSElem<CondEnum>
+  | NSSElemFunc<CondEnum>
+  | NSSCond
+  | NSSCondFunc
   | string[]
   | Record<string, unknown>;
 
-export type ENSSClassMap<NameEnum, ElemEnum, CondEnum> = Partial<
+export type NSSClassMap<NameEnum, ElemEnum, CondEnum> = Partial<
   Record<keyof NameEnum | keyof ElemEnum | keyof CondEnum, string>
 >;
 
-export type ENSSConfig = {
+export type NSSConfig = {
   elementSeparator: string;
   conditionalSeparator: string;
 };
 
-const defaultConfig: ENSSConfig = {
+const defaultConfig: NSSConfig = {
   elementSeparator: "-",
   conditionalSeparator: "--",
 };
@@ -66,7 +66,7 @@ function toStringError(): string {
   );
 }
 
-export default function enss<
+export default function nss<
   NameEnum = object,
   ElemEnum = object,
   CondEnum = object
@@ -76,11 +76,11 @@ export default function enss<
   condEnum?: null | Record<keyof CondEnum, string | number | boolean>,
   classMap?:
     | null
-    | ENSSClassMap<NameEnum, ElemEnum, CondEnum>
+    | NSSClassMap<NameEnum, ElemEnum, CondEnum>
     | ((
-        classMap: ENSSClassMap<NameEnum, ElemEnum, CondEnum>
-      ) => void | ENSSClassMap<NameEnum, ElemEnum, CondEnum>)
-): ENSS<NameEnum, ElemEnum, CondEnum> {
+        classMap: NSSClassMap<NameEnum, ElemEnum, CondEnum>
+      ) => void | NSSClassMap<NameEnum, ElemEnum, CondEnum>)
+): NSS<NameEnum, ElemEnum, CondEnum> {
   const elemSep = () => config.elementSeparator;
   const condSep = () => config.conditionalSeparator;
 
@@ -145,19 +145,19 @@ export default function enss<
             //       allows distinction between myCls() and myCls(undefined) calls
             let str: string;
             let cls: string;
-            let __enssCondOff__;
+            let __nssCondOff__;
             if (!arguments.length || on) {
-              __enssCondOff__ = false;
+              __nssCondOff__ = false;
               str = classPrefix + condName + afterClass;
               cls = priorClass + str;
             } else {
-              __enssCondOff__ = true;
+              __nssCondOff__ = true;
               str = "";
               cls = classPrelude ?? "";
             }
             return {
-              __enss__: true,
-              ...(__enssCondOff__ ? { __enssCondOff__: true } : {}),
+              __nss__: true,
+              ...(__nssCondOff__ ? { __nssCondOff__: true } : {}),
               name: condName,
               class: cls,
               c: cls,
@@ -167,7 +167,7 @@ export default function enss<
             };
           }
 
-          builder.__enss__ = true;
+          builder.__nss__ = true;
           builder.string = builder.s = classPrefix + condName + afterClass;
           builder.class = builder.c = priorClass + builder.string;
           builder.toString = toStringError;
@@ -192,7 +192,7 @@ export default function enss<
         elemClass && elemClass !== elemName ? (elemClass as string) : "";
       const classPrefix = baseName ? baseName + elemSep() : "";
 
-      function builder(...args: ENSSArg<CondEnum>[]) {
+      function builder(...args: NSSArg<CondEnum>[]) {
         let str = afterClass;
         if (args.length) {
           const composed = composeClass<CondEnum>(
@@ -208,7 +208,7 @@ export default function enss<
         space = cls.length && str.length && str[0] !== " " ? " " : "";
         cls += space + str;
         return {
-          __enss__: true,
+          __nss__: true,
           name: elemName,
           class: cls,
           c: cls,
@@ -218,7 +218,7 @@ export default function enss<
         };
       }
 
-      builder.__enss__ = true;
+      builder.__nss__ = true;
       builder.string = builder.s = afterClass;
       const prefix = classPrefix + elemName;
       space = prefix.length && builder.string.length ? " " : "";
@@ -244,8 +244,8 @@ export default function enss<
   const baseAfterClass = baseClass ?? "";
   const classPrefix = baseName ? baseName + condSep() : "";
 
-  // Create top-level ENSS object (en):
-  function mainClsBuilder(...args: ENSSArg<CondEnum>[]) {
+  // Create top-level NSS object (en):
+  function mainClsBuilder(...args: NSSArg<CondEnum>[]) {
     let str = baseAfterClass;
     if (args.length) {
       const composed = composeClass<CondEnum>(
@@ -259,7 +259,7 @@ export default function enss<
     }
     const cls = basePriorClass + (baseName && str.length ? " " : "") + str;
     return {
-      __enss__: true,
+      __nss__: true,
       name: baseName,
       class: cls,
       c: cls,
@@ -269,7 +269,7 @@ export default function enss<
     };
   }
 
-  mainClsBuilder.__enss__ = true;
+  mainClsBuilder.__nss__ = true;
   mainClsBuilder.class = mainClsBuilder.c =
     basePriorClass + (baseName && baseClass ? " " : "") + baseAfterClass;
   mainClsBuilder.string = mainClsBuilder.s = baseAfterClass;
@@ -304,35 +304,35 @@ export default function enss<
     )
   );
 
-  return mainClsBuilder as unknown as ENSS<NameEnum, ElemEnum, CondEnum>;
+  return mainClsBuilder as unknown as NSS<NameEnum, ElemEnum, CondEnum>;
 }
 
-// resolveENSSArg maps basic cond expressions (eg. en.myCond) to their corresponding
+// resolveNSSArg maps basic cond expressions (eg. en.myCond) to their corresponding
 // namespaced cond expressions (eg. en.myElem.myCond) when composing conditionals:
 // en.myElem(en.myCondA, en.myCondB)
 // This obviates the need to supply fully-namespaced conditionals in this case, eg.
 // en.myElem(en.myElem.myCondA, en.myElem.myCondB)
-export function resolveENSSArg<CondEnum>(
-  builder: ENSSObject,
-  arg: string | ENSSArg<CondEnum>
-): string | ENSSArg<CondEnum> {
-  const { __enss__, __enssCondOff__, name } = arg as ENSSCond;
-  if (__enss__) {
-    const cond = (builder as unknown as Record<string, ENSSCondFunc>)[name];
+export function resolveNSSArg<CondEnum>(
+  builder: NSSObject,
+  arg: string | NSSArg<CondEnum>
+): string | NSSArg<CondEnum> {
+  const { __nss__, __nssCondOff__, name } = arg as NSSCond;
+  if (__nss__) {
+    const cond = (builder as unknown as Record<string, NSSCondFunc>)[name];
     if (cond) {
-      return __enssCondOff__ ? cond(false).string : cond.string;
+      return __nssCondOff__ ? cond(false).string : cond.string;
     } else {
-      return (arg as ENSSObject).string;
+      return (arg as NSSObject).string;
     }
   }
   return arg;
 }
 
 function composeClass<CondEnum>(
-  builder: ENSSObject,
+  builder: NSSObject,
   mappings: null | Map<string, string>,
   prefix: string,
-  values: ENSSArg<CondEnum>[]
+  values: NSSArg<CondEnum>[]
 ): string {
   let res = "";
   for (const val of values) {
@@ -343,8 +343,8 @@ function composeClass<CondEnum>(
         throw new Error(
           "Do not pass strings directly; enclose in object or array"
         );
-      } else if ((val as ENSSObject)?.__enss__) {
-        const str = resolveENSSArg(builder, val) as string;
+      } else if ((val as NSSObject)?.__nss__) {
+        const str = resolveNSSArg(builder, val) as string;
         res += str?.length ? " " + str : "";
       } else {
         // this is an Object or Array:
@@ -358,9 +358,7 @@ function composeClass<CondEnum>(
             entries = null;
           }
           if (!entries?.length) {
-            throw new Error(
-              `ENSS Error: Invalid input ${JSON.stringify(val)}.`
-            );
+            throw new Error(`NSS Error: Invalid input ${JSON.stringify(val)}.`);
           }
         }
         for (const [name, on] of entries) {
@@ -377,7 +375,7 @@ function composeClass<CondEnum>(
           }
           // Ignore classes associated with all other `on` values, even those
           // that are "truthy". This allows easily passing props objects into
-          // enss where boolean props are meant to be used as classes, but
+          // nss where boolean props are meant to be used as classes, but
           // all other props should be ignored.
           // If "truthiness" checks are desired, input must simply be cast to
           // bool first, eg. en({ myclass: !!myprop })
@@ -403,7 +401,7 @@ function omitEnumReverseMappings<T>(enumObj: T): T {
 
 function extractNameEnumData<NameEnum, ElemEnum, CondEnum>(
   nameEnum?: null | Record<string, string | number | boolean | null>,
-  classMap?: null | ENSSClassMap<NameEnum, ElemEnum, CondEnum>
+  classMap?: null | NSSClassMap<NameEnum, ElemEnum, CondEnum>
 ): [string | null, string | null] {
   let baseName: string | null = null;
   let baseClass: string | null = null;
@@ -412,7 +410,7 @@ function extractNameEnumData<NameEnum, ElemEnum, CondEnum>(
     const entries = Object.entries(nameEnum);
     if (entries.length > 1) {
       throw new Error(
-        "ENSS Error: Invalid name enum provided; should have at most 1 field."
+        "NSS Error: Invalid name enum provided; should have at most 1 field."
       );
     } else if (entries.length === 1) {
       [[baseName, baseClass]] = entries as [[string, string]];
@@ -439,6 +437,6 @@ function extractNameEnumData<NameEnum, ElemEnum, CondEnum>(
   return [baseName, baseClass];
 }
 
-enss.configure = function (configUpdate: null | Partial<ENSSConfig>) {
+nss.configure = function (configUpdate: null | Partial<NSSConfig>) {
   Object.assign(config, configUpdate === null ? defaultConfig : configUpdate);
 };

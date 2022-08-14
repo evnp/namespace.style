@@ -11,17 +11,16 @@ var __assign = (this && this.__assign) || function () {
     return __assign.apply(this, arguments);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resolveENSSArg = void 0;
+exports.resolveNSSArg = void 0;
 var defaultConfig = {
     elementSeparator: "-",
     conditionalSeparator: "--",
-    strictBoolChecks: true,
 };
 var config = __assign({}, defaultConfig);
 function toStringError() {
     throw new Error("Do not coerce to string directly; use .c (.class) or .s (.string)");
 }
-function enss(nameEnum, elemEnum, condEnum, classMap) {
+function nss(nameEnum, elemEnum, condEnum, classMap) {
     var _a;
     var elemSep = function () { return config.elementSeparator; };
     var condSep = function () { return config.conditionalSeparator; };
@@ -72,23 +71,20 @@ function enss(nameEnum, elemEnum, condEnum, classMap) {
                     //       allows distinction between myCls() and myCls(undefined) calls
                     var str;
                     var cls;
-                    var __enssCondOff__;
-                    if (!arguments.length ||
-                        on === true || // only recognize boolean values
-                        (!config.strictBoolChecks && on) // unless strictBoolChecks=false
-                    ) {
-                        __enssCondOff__ = false;
+                    var __nssCondOff__;
+                    if (!arguments.length || on) {
+                        __nssCondOff__ = false;
                         str = classPrefix + condName + afterClass;
                         cls = priorClass + str;
                     }
                     else {
-                        __enssCondOff__ = true;
+                        __nssCondOff__ = true;
                         str = "";
                         cls = classPrelude !== null && classPrelude !== void 0 ? classPrelude : "";
                     }
-                    return __assign(__assign({ __enss__: true }, (__enssCondOff__ ? { __enssCondOff__: true } : {})), { name: condName, class: cls, c: cls, string: str, s: str, toString: toStringError });
+                    return __assign(__assign({ __nss__: true }, (__nssCondOff__ ? { __nssCondOff__: true } : {})), { name: condName, class: cls, c: cls, string: str, s: str, toString: toStringError });
                 }
-                builder.__enss__ = true;
+                builder.__nss__ = true;
                 builder.string = builder.s = classPrefix + condName + afterClass;
                 builder.class = builder.c = priorClass + builder.string;
                 builder.toString = toStringError;
@@ -114,7 +110,7 @@ function enss(nameEnum, elemEnum, condEnum, classMap) {
             }
             var str = afterClass;
             if (args.length) {
-                var composed = composeClass(builder, config, mappings, classPrefix + elemName + condSep(), args);
+                var composed = composeClass(builder, mappings, classPrefix + elemName + condSep(), args);
                 space = str.length && composed.length ? " " : "";
                 str += space + composed;
             }
@@ -122,7 +118,7 @@ function enss(nameEnum, elemEnum, condEnum, classMap) {
             space = cls.length && str.length && str[0] !== " " ? " " : "";
             cls += space + str;
             return {
-                __enss__: true,
+                __nss__: true,
                 name: elemName,
                 class: cls,
                 c: cls,
@@ -131,7 +127,7 @@ function enss(nameEnum, elemEnum, condEnum, classMap) {
                 toString: toStringError,
             };
         }
-        builder.__enss__ = true;
+        builder.__nss__ = true;
         builder.string = builder.s = afterClass;
         var prefix = classPrefix + elemName;
         space = prefix.length && builder.string.length ? " " : "";
@@ -148,7 +144,7 @@ function enss(nameEnum, elemEnum, condEnum, classMap) {
     var basePriorClass = baseName !== null && baseName !== void 0 ? baseName : "";
     var baseAfterClass = baseClass !== null && baseClass !== void 0 ? baseClass : "";
     var classPrefix = baseName ? baseName + condSep() : "";
-    // Create top-level ENSS object (en):
+    // Create top-level NSS object (en):
     function mainClsBuilder() {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
@@ -156,13 +152,13 @@ function enss(nameEnum, elemEnum, condEnum, classMap) {
         }
         var str = baseAfterClass;
         if (args.length) {
-            var composed = composeClass(mainClsBuilder, config, mappings, classPrefix, args);
+            var composed = composeClass(mainClsBuilder, mappings, classPrefix, args);
             var space = str.length && composed.length ? " " : "";
             str += space + composed;
         }
         var cls = basePriorClass + (baseName && str.length ? " " : "") + str;
         return {
-            __enss__: true,
+            __nss__: true,
             name: baseName,
             class: cls,
             c: cls,
@@ -171,7 +167,7 @@ function enss(nameEnum, elemEnum, condEnum, classMap) {
             toString: toStringError,
         };
     }
-    mainClsBuilder.__enss__ = true;
+    mainClsBuilder.__nss__ = true;
     mainClsBuilder.class = mainClsBuilder.c =
         basePriorClass + (baseName && baseClass ? " " : "") + baseAfterClass;
     mainClsBuilder.string = mainClsBuilder.s = baseAfterClass;
@@ -197,18 +193,18 @@ function enss(nameEnum, elemEnum, condEnum, classMap) {
     Object.assign(mainClsBuilder, makeCondClassBuilders(mainClsBuilder.c, baseName ? baseName + condSep() : ""));
     return mainClsBuilder;
 }
-exports.default = enss;
-// resolveENSSArg maps basic cond expressions (eg. en.myCond) to their corresponding
+exports.default = nss;
+// resolveNSSArg maps basic cond expressions (eg. en.myCond) to their corresponding
 // namespaced cond expressions (eg. en.myElem.myCond) when composing conditionals:
 // en.myElem(en.myCondA, en.myCondB)
 // This obviates the need to supply fully-namespaced conditionals in this case, eg.
 // en.myElem(en.myElem.myCondA, en.myElem.myCondB)
-function resolveENSSArg(builder, arg) {
-    var _a = arg, __enss__ = _a.__enss__, __enssCondOff__ = _a.__enssCondOff__, name = _a.name;
-    if (__enss__) {
+function resolveNSSArg(builder, arg) {
+    var _a = arg, __nss__ = _a.__nss__, __nssCondOff__ = _a.__nssCondOff__, name = _a.name;
+    if (__nss__) {
         var cond = builder[name];
         if (cond) {
-            return __enssCondOff__ ? cond(false).string : cond.string;
+            return __nssCondOff__ ? cond(false).string : cond.string;
         }
         else {
             return arg.string;
@@ -216,8 +212,8 @@ function resolveENSSArg(builder, arg) {
     }
     return arg;
 }
-exports.resolveENSSArg = resolveENSSArg;
-function composeClass(builder, config, mappings, prefix, values) {
+exports.resolveNSSArg = resolveNSSArg;
+function composeClass(builder, mappings, prefix, values) {
     var _a;
     var res = "";
     for (var _i = 0, values_1 = values; _i < values_1.length; _i++) {
@@ -228,8 +224,8 @@ function composeClass(builder, config, mappings, prefix, values) {
                 // this is a String:
                 throw new Error("Do not pass strings directly; enclose in object or array");
             }
-            else if ((_a = val) === null || _a === void 0 ? void 0 : _a.__enss__) {
-                var str = resolveENSSArg(builder, val);
+            else if ((_a = val) === null || _a === void 0 ? void 0 : _a.__nss__) {
+                var str = resolveNSSArg(builder, val);
                 res += (str === null || str === void 0 ? void 0 : str.length) ? " " + str : "";
             }
             else {
@@ -246,14 +242,12 @@ function composeClass(builder, config, mappings, prefix, values) {
                         entries = null;
                     }
                     if (!(entries === null || entries === void 0 ? void 0 : entries.length)) {
-                        throw new Error("ENSS Error: Invalid input ".concat(JSON.stringify(val), "."));
+                        throw new Error("NSS Error: Invalid input ".concat(JSON.stringify(val), "."));
                     }
                 }
                 for (var _b = 0, entries_1 = entries; _b < entries_1.length; _b++) {
                     var _c = entries_1[_b], name_1 = _c[0], on = _c[1];
-                    if (on === true || // only recognize boolean values
-                        (!config.strictBoolChecks && on) // unless strictBoolChecks=false
-                    ) {
+                    if (on) {
                         res += " " + prefix + name_1;
                         var mappedCls = mappings === null || mappings === void 0 ? void 0 : mappings.get(name_1);
                         if ((mappedCls === null || mappedCls === void 0 ? void 0 : mappedCls.length) &&
@@ -264,7 +258,7 @@ function composeClass(builder, config, mappings, prefix, values) {
                     }
                     // Ignore classes associated with all other `on` values, even those
                     // that are "truthy". This allows easily passing props objects into
-                    // enss where boolean props are meant to be used as classes, but
+                    // nss where boolean props are meant to be used as classes, but
                     // all other props should be ignored.
                     // If "truthiness" checks are desired, input must simply be cast to
                     // bool first, eg. en({ myclass: !!myprop })
@@ -297,7 +291,7 @@ function extractNameEnumData(nameEnum, classMap) {
     if (nameEnum && typeof nameEnum === "object") {
         var entries = Object.entries(nameEnum);
         if (entries.length > 1) {
-            throw new Error("ENSS Error: Invalid name enum provided; should have at most 1 field.");
+            throw new Error("NSS Error: Invalid name enum provided; should have at most 1 field.");
         }
         else if (entries.length === 1) {
             _a = entries[0], baseName = _a[0], baseClass = _a[1];
@@ -320,6 +314,6 @@ function extractNameEnumData(nameEnum, classMap) {
     }
     return [baseName, baseClass];
 }
-enss.configure = function (configUpdate) {
+nss.configure = function (configUpdate) {
     Object.assign(config, configUpdate === null ? defaultConfig : configUpdate);
 };

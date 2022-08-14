@@ -1,25 +1,25 @@
 {
-  "name": "enss",
+  "name": "namespacestyle",
   "version": "0.0.10",
   "description": "A structured, type-safe link between CSS and HTML.",
-  "main": "enss.js",
-  "types": "enss.d.ts",
+  "main": "nss.js",
+  "types": "nss.d.ts",
   "files": [
-    "enss.d.ts",
-    "enss.js",
-    "enss.min.js",
-    "enss.min.js.gz"
+    "nss.d.ts",
+    "nss.js",
+    "nss.min.js",
+    "nss.min.js.gz"
   ],
   "scripts": {
     "build": "tsc && npm run minify",
     "test": "jest",
     "lint": "eslint src/ test/",
     "format": "eslint --fix src/ test/",
-    "minify": "esbuild --minify --target=es5 enss.js > enss.min.js && gzip -kf9 enss.min.js && echo \"enss.min.js.gz :: $( ls -lh enss.min.js.gz | tr -s ' ' | cut -d' ' -f5 ) :: $( ls -l enss.min.js.gz | tr -s ' ' | cut -d' ' -f5 )B\""
+    "minify": "esbuild --minify --target=es5 nss.js > nss.min.js && gzip -kf9 nss.min.js && echo \"nss.min.js.gz :: $( ls -lh nss.min.js.gz | tr -s ' ' | cut -d' ' -f5 ) :: $( ls -l nss.min.js.gz | tr -s ' ' | cut -d' ' -f5 )B\""
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/evnp/enss.git"
+    "url": "git+https://github.com/evnp/nss.git"
   },
   "keywords": [
     "css",
@@ -30,9 +30,9 @@
   "author": "Evan Purcer",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/evnp/enss/issues"
+    "url": "https://github.com/evnp/nss/issues"
   },
-  "homepage": "https://github.com/evnp/enss#readme",
+  "homepage": "https://github.com/evnp/nss#readme",
   "devDependencies": {
     "@types/jest": "^27.0.3",
     "@typescript-eslint/eslint-plugin": "^5.8.1",
