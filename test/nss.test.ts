@@ -64,7 +64,7 @@ describe("NSS", () => {
     });
 
     test("base class", () => {
-      // Test class resolver (short version):
+      // Test cls resolver (short version):
       expect(n.c).toBe("Ship");
       expect(n().c).toBe("Ship");
       expect(n(["enterprise"]).c).toBe("Ship Ship--enterprise");
@@ -76,16 +76,16 @@ describe("NSS", () => {
       // to inadvertantly pass something like n.damaged.s resulting in bad class.
       // This is tough to detect automatically if we allow any string to be passed.
 
-      // Test class resolver (verbose version):
-      expect(n.class).toBe("Ship");
-      expect(n().class).toBe("Ship");
-      expect(n(["enterprise"]).class).toBe("Ship Ship--enterprise");
-      expect(n({ enterprise: true }).class).toBe("Ship Ship--enterprise");
+      // Test cls resolver (verbose version):
+      expect(n.cls).toBe("Ship");
+      expect(n().cls).toBe("Ship");
+      expect(n(["enterprise"]).cls).toBe("Ship Ship--enterprise");
+      expect(n({ enterprise: true }).cls).toBe("Ship Ship--enterprise");
       expect(
-        () => n("enterprise" as unknown as NSSArg<typeof Cond>).class
+        () => n("enterprise" as unknown as NSSArg<typeof Cond>).cls
       ).toThrow();
 
-      // Test string resolver (short version):
+      // Test str resolver (short version):
       expect(n.s).toBe("");
       expect(n().s).toBe("");
       expect(n(["enterprise"]).s).toBe("Ship--enterprise");
@@ -94,13 +94,13 @@ describe("NSS", () => {
         () => n("enterprise" as unknown as NSSArg<typeof Cond>).s
       ).toThrow();
 
-      // Test string resolver (verbose version):
-      expect(n.string).toBe("");
-      expect(n().string).toBe("");
-      expect(n(["enterprise"]).string).toBe("Ship--enterprise");
-      expect(n({ enterprise: true }).string).toBe("Ship--enterprise");
+      // Test str resolver (verbose version):
+      expect(n.str).toBe("");
+      expect(n().str).toBe("");
+      expect(n(["enterprise"]).str).toBe("Ship--enterprise");
+      expect(n({ enterprise: true }).str).toBe("Ship--enterprise");
       expect(
-        () => n("enterprise" as unknown as NSSArg<typeof Cond>).string
+        () => n("enterprise" as unknown as NSSArg<typeof Cond>).str
       ).toThrow();
 
       // Should throw: NSS expressions should never be cast directly to string.
@@ -133,7 +133,7 @@ describe("NSS", () => {
     });
 
     test("element classes", () => {
-      // Test class resolver (short version):
+      // Test cls resolver (short version):
       expect(n.engine.c).toBe("Ship-engine");
       expect(n.engine().c).toBe("Ship-engine");
       expect(n.engine(["nacelle"]).c).toBe("Ship-engine Ship-engine--nacelle");
@@ -144,20 +144,20 @@ describe("NSS", () => {
         () => n.engine("nacelle" as unknown as NSSArg<typeof Cond>).c
       ).toThrow();
 
-      // Test class resolver (verbose version):
-      expect(n.engine.class).toBe("Ship-engine");
-      expect(n.engine().class).toBe("Ship-engine");
-      expect(n.engine(["nacelle"]).class).toBe(
+      // Test cls resolver (verbose version):
+      expect(n.engine.cls).toBe("Ship-engine");
+      expect(n.engine().cls).toBe("Ship-engine");
+      expect(n.engine(["nacelle"]).cls).toBe(
         "Ship-engine Ship-engine--nacelle"
       );
-      expect(n.engine({ nacelle: true }).class).toBe(
+      expect(n.engine({ nacelle: true }).cls).toBe(
         "Ship-engine Ship-engine--nacelle"
       );
       expect(
-        () => n.engine("nacelle" as unknown as NSSArg<typeof Cond>).class
+        () => n.engine("nacelle" as unknown as NSSArg<typeof Cond>).cls
       ).toThrow();
 
-      // Test string resolver (short version):
+      // Test str resolver (short version):
       expect(n.engine.s).toBe("");
       expect(n.engine().s).toBe("");
       expect(n.engine(["nacelle"]).s).toBe("Ship-engine--nacelle");
@@ -166,13 +166,13 @@ describe("NSS", () => {
         () => n.engine("nacelle" as unknown as NSSArg<typeof Cond>).s
       ).toThrow();
 
-      // Test string resolver (verbose version):
-      expect(n.engine.string).toBe("");
-      expect(n.engine().string).toBe("");
-      expect(n.engine(["nacelle"]).string).toBe("Ship-engine--nacelle");
-      expect(n.engine({ nacelle: true }).string).toBe("Ship-engine--nacelle");
+      // Test str resolver (verbose version):
+      expect(n.engine.str).toBe("");
+      expect(n.engine().str).toBe("");
+      expect(n.engine(["nacelle"]).str).toBe("Ship-engine--nacelle");
+      expect(n.engine({ nacelle: true }).str).toBe("Ship-engine--nacelle");
       expect(
-        () => n.engine("nacelle" as unknown as NSSArg<typeof Cond>).string
+        () => n.engine("nacelle" as unknown as NSSArg<typeof Cond>).str
       ).toThrow();
 
       // Should throw: NSS expressions should never be cast directly to string.
@@ -256,21 +256,21 @@ describe("NSS", () => {
     });
 
     test("conditional classes", () => {
-      // Test class resolver (short version):
+      // Test cls resolver (short version):
       expect(n.warp.c /*---------------*/).toBe("Ship Ship--warp");
       expect(n.warp().c /*-------------*/).toBe("Ship Ship--warp");
 
-      // Test class resolver (verbose version):
-      expect(n.warp.class /*-----------*/).toBe("Ship Ship--warp");
-      expect(n.warp().class /*---------*/).toBe("Ship Ship--warp");
+      // Test cls resolver (verbose version):
+      expect(n.warp.cls /*-----------*/).toBe("Ship Ship--warp");
+      expect(n.warp().cls /*---------*/).toBe("Ship Ship--warp");
 
-      // Test string resolver (short version):
+      // Test str resolver (short version):
       expect(n.warp.s /*---------------*/).toBe("Ship--warp");
       expect(n.warp().s /*-------------*/).toBe("Ship--warp");
 
-      // Test string resolver (verbose version):
-      expect(n.warp.string /*----------*/).toBe("Ship--warp");
-      expect(n.warp().string /*--------*/).toBe("Ship--warp");
+      // Test str resolver (verbose version):
+      expect(n.warp.str /*----------*/).toBe("Ship--warp");
+      expect(n.warp().str /*--------*/).toBe("Ship--warp");
 
       // Should throw: NSS expressions should never be cast directly to string.
       expect(() => `${n.warp}`).toThrow();
@@ -384,7 +384,7 @@ describe("NSS", () => {
     });
 
     test("element conditional classes", () => {
-      // Test class resolver (short version):
+      // Test cls resolver (short version):
       expect(n.part.warp.c /*------------*/).toBe("Ship-part Ship-part--warp");
       expect(n.part.warp().c /*----------*/).toBe("Ship-part Ship-part--warp");
       expect(n.part.warp(true).c /*------*/).toBe("Ship-part Ship-part--warp");
@@ -396,19 +396,19 @@ describe("NSS", () => {
       expect(n.part.warp("klingon").c /*-*/).toBe("Ship-part Ship-part--warp");
       expect(n.part.warp("").c /*--------*/).toBe("Ship-part");
 
-      // Test class resolver (verbose version):
-      expect(n.part.warp.class /*--------*/).toBe("Ship-part Ship-part--warp");
-      expect(n.part.warp().class /*------*/).toBe("Ship-part Ship-part--warp");
-      expect(n.part.warp(true).class /*--*/).toBe("Ship-part Ship-part--warp");
-      expect(n.part.warp(false).class /*-*/).toBe("Ship-part");
-      expect(n.part.warp(0).class /*-----*/).toBe("Ship-part");
-      expect(n.part.warp(1).class /*-----*/).toBe("Ship-part Ship-part--warp");
-      expect(n.part.warp(null).class /*--*/).toBe("Ship-part");
-      expect(n.part.warp(undefined).class).toBe("Ship-part");
-      expect(n.part.warp("klingon").class).toBe("Ship-part Ship-part--warp");
-      expect(n.part.warp("").class /*----*/).toBe("Ship-part");
+      // Test cls resolver (verbose version):
+      expect(n.part.warp.cls /*--------*/).toBe("Ship-part Ship-part--warp");
+      expect(n.part.warp().cls /*------*/).toBe("Ship-part Ship-part--warp");
+      expect(n.part.warp(true).cls /*--*/).toBe("Ship-part Ship-part--warp");
+      expect(n.part.warp(false).cls /*-*/).toBe("Ship-part");
+      expect(n.part.warp(0).cls /*-----*/).toBe("Ship-part");
+      expect(n.part.warp(1).cls /*-----*/).toBe("Ship-part Ship-part--warp");
+      expect(n.part.warp(null).cls /*--*/).toBe("Ship-part");
+      expect(n.part.warp(undefined).cls).toBe("Ship-part");
+      expect(n.part.warp("klingon").cls).toBe("Ship-part Ship-part--warp");
+      expect(n.part.warp("").cls /*----*/).toBe("Ship-part");
 
-      // Test string resolver (short version):
+      // Test str resolver (short version):
       expect(n.part.warp.s /*------------*/).toBe("Ship-part--warp");
       expect(n.part.warp().s /*----------*/).toBe("Ship-part--warp");
       expect(n.part.warp(true).s /*------*/).toBe("Ship-part--warp");
@@ -420,17 +420,17 @@ describe("NSS", () => {
       expect(n.part.warp("klingon").s /*-*/).toBe("Ship-part--warp");
       expect(n.part.warp("").s /*--------*/).toBe("");
 
-      // Test string resolver (verbose version):
-      expect(n.part.warp.string /*--------*/).toBe("Ship-part--warp");
-      expect(n.part.warp().string /*------*/).toBe("Ship-part--warp");
-      expect(n.part.warp(true).string /*--*/).toBe("Ship-part--warp");
-      expect(n.part.warp(false).string /*-*/).toBe("");
-      expect(n.part.warp(0).string /*-----*/).toBe("");
-      expect(n.part.warp(1).string /*-----*/).toBe("Ship-part--warp");
-      expect(n.part.warp(null).string /*--*/).toBe("");
-      expect(n.part.warp(undefined).string).toBe("");
-      expect(n.part.warp("klingon").string).toBe("Ship-part--warp");
-      expect(n.part.warp("").string /*----*/).toBe("");
+      // Test str resolver (verbose version):
+      expect(n.part.warp.str /*--------*/).toBe("Ship-part--warp");
+      expect(n.part.warp().str /*------*/).toBe("Ship-part--warp");
+      expect(n.part.warp(true).str /*--*/).toBe("Ship-part--warp");
+      expect(n.part.warp(false).str /*-*/).toBe("");
+      expect(n.part.warp(0).str /*-----*/).toBe("");
+      expect(n.part.warp(1).str /*-----*/).toBe("Ship-part--warp");
+      expect(n.part.warp(null).str /*--*/).toBe("");
+      expect(n.part.warp(undefined).str).toBe("");
+      expect(n.part.warp("klingon").str).toBe("Ship-part--warp");
+      expect(n.part.warp("").str /*----*/).toBe("");
 
       // Should throw: NSS expressions should never be cast directly to string.
       expect(() => `${n.part.warp}`).toThrow();

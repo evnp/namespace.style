@@ -7,10 +7,10 @@ export type NSS<NameEnum, ElemEnum, CondEnum> = {
 export type NSSObject = {
   __nss__: boolean;
   name: string;
-  class: string;
-  c: string;
-  string: string;
-  s: string;
+  cls: string;
+  c: string; // alias
+  str: string;
+  s: string; // alias
   toString: () => string;
 };
 
@@ -62,7 +62,7 @@ const config = { ...defaultConfig };
 
 function toStringError(): string {
   throw new Error(
-    "Do not coerce to string directly; use .c (.class) or .s (.string)"
+    "Don't coerce to string directly; use .c or .s (aliases: .cls .str)"
   );
 }
 
@@ -159,17 +159,17 @@ export default function nss<
               __nss__: true,
               ...(__nssCondOff__ ? { __nssCondOff__: true } : {}),
               name: condName,
-              class: cls,
-              c: cls,
-              string: str,
-              s: str,
+              cls,
+              c: cls, // alias
+              str,
+              s: str, // alias
               toString: toStringError,
             };
           }
 
           builder.__nss__ = true;
-          builder.string = builder.s = classPrefix + condName + afterClass;
-          builder.class = builder.c = priorClass + builder.string;
+          builder.str = builder.s = classPrefix + condName + afterClass;
+          builder.cls = builder.c = priorClass + builder.str;
           builder.toString = toStringError;
 
           // Set en.cond.name:
@@ -210,19 +210,19 @@ export default function nss<
         return {
           __nss__: true,
           name: elemName,
-          class: cls,
-          c: cls,
-          string: str,
-          s: str,
+          cls,
+          c: cls, // alias
+          str,
+          s: str, // alias
           toString: toStringError,
         };
       }
 
       builder.__nss__ = true;
-      builder.string = builder.s = afterClass;
+      builder.str = builder.s = afterClass;
       const prefix = classPrefix + elemName;
-      space = prefix.length && builder.string.length ? " " : "";
-      builder.class = builder.c = prefix + space + builder.string;
+      space = prefix.length && builder.str.length ? " " : "";
+      builder.cls = builder.c = prefix + space + builder.str;
       builder.toString = toStringError;
 
       Object.assign(
@@ -261,18 +261,18 @@ export default function nss<
     return {
       __nss__: true,
       name: baseName,
-      class: cls,
-      c: cls,
-      string: str,
-      s: str,
+      cls,
+      c: cls, // alias
+      str,
+      s: str, // alias
       toString: toStringError,
     };
   }
 
   mainClsBuilder.__nss__ = true;
-  mainClsBuilder.class = mainClsBuilder.c =
+  mainClsBuilder.cls = mainClsBuilder.c =
     basePriorClass + (baseName && baseClass ? " " : "") + baseAfterClass;
-  mainClsBuilder.string = mainClsBuilder.s = baseAfterClass;
+  mainClsBuilder.str = mainClsBuilder.s = baseAfterClass;
   mainClsBuilder.toString = toStringError;
 
   // Set en.name:
@@ -320,9 +320,9 @@ export function resolveNSSArg<CondEnum>(
   if (__nss__) {
     const cond = (builder as unknown as Record<string, NSSCondFunc>)[name];
     if (cond) {
-      return __nssCondOff__ ? cond(false).string : cond.string;
+      return __nssCondOff__ ? cond(false).str : cond.str;
     } else {
-      return (arg as NSSObject).string;
+      return (arg as NSSObject).str;
     }
   }
   return arg;
