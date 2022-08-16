@@ -6,9 +6,9 @@ export declare type NSS<NameEnum, ElemEnum, CondEnum> = {
 export declare type NSSObject = {
     __nss__: boolean;
     name: string;
-    class: string;
+    cls: string;
     c: string;
-    string: string;
+    str: string;
     s: string;
     toString: () => string;
 };
@@ -16,9 +16,13 @@ export declare type NSSBase<ElemEnum, CondEnum> = {
     [key in keyof ElemEnum]: NSSElemFunc<CondEnum>;
 } & {
     [key in keyof CondEnum]: NSSCondFunc;
+} & {
+    props: (...args: NSSArg<CondEnum>[]) => NSSElem<CondEnum>;
 } & NSSCond;
 export declare type NSSElem<CondEnum> = {
     [key in keyof CondEnum]: NSSCondFunc;
+} & {
+    props: (...args: NSSArg<CondEnum>[]) => NSSElem<CondEnum>;
 } & NSSObject;
 export declare type NSSCond = NSSObject & {
     __nssCondOff__?: boolean;

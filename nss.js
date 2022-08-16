@@ -18,7 +18,7 @@ var defaultConfig = {
 };
 var config = __assign({}, defaultConfig);
 function toStringError() {
-    throw new Error("Do not coerce to string directly; use .c (.class) or .s (.string)");
+    throw new Error("Don't coerce to string directly; use .c or .s (aliases: .cls .str)");
 }
 function nss(nameEnum, elemEnum, condEnum, classMap) {
     var _a;
@@ -82,11 +82,12 @@ function nss(nameEnum, elemEnum, condEnum, classMap) {
                         str = "";
                         cls = classPrelude !== null && classPrelude !== void 0 ? classPrelude : "";
                     }
-                    return __assign(__assign({ __nss__: true }, (__nssCondOff__ ? { __nssCondOff__: true } : {})), { name: condName, class: cls, c: cls, string: str, s: str, toString: toStringError });
+                    return __assign(__assign({ __nss__: true }, (__nssCondOff__ ? { __nssCondOff__: true } : {})), { name: condName, cls: cls, c: cls, // alias
+                        str: str, s: str, toString: toStringError });
                 }
                 builder.__nss__ = true;
-                builder.string = builder.s = classPrefix + condName + afterClass;
-                builder.class = builder.c = priorClass + builder.string;
+                builder.str = builder.s = classPrefix + condName + afterClass;
+                builder.cls = builder.c = priorClass + builder.str;
                 builder.toString = toStringError;
                 // Set en.cond.name:
                 Object.defineProperty(builder, "name", {
@@ -100,7 +101,6 @@ function nss(nameEnum, elemEnum, condEnum, classMap) {
     }
     var elemClsBuilders = Object.fromEntries(Object.entries(elemEnum !== null && elemEnum !== void 0 ? elemEnum : {}).map(function (_a) {
         var elemName = _a[0], elemClass = _a[1];
-        var space;
         var afterClass = elemClass && elemClass !== elemName ? elemClass : "";
         var classPrefix = baseName ? baseName + elemSep() : "";
         function builder() {
@@ -108,31 +108,38 @@ function nss(nameEnum, elemEnum, condEnum, classMap) {
             for (var _i = 0; _i < arguments.length; _i++) {
                 args[_i] = arguments[_i];
             }
-            var str = afterClass;
-            if (args.length) {
-                var composed = composeClass(builder, mappings, classPrefix + elemName + condSep(), args);
-                space = str.length && composed.length ? " " : "";
-                str += space + composed;
-            }
-            var cls = classPrefix + elemName;
-            space = cls.length && str.length && str[0] !== " " ? " " : "";
-            cls += space + str;
-            return {
-                __nss__: true,
-                name: elemName,
-                class: cls,
-                c: cls,
-                string: str,
-                s: str,
-                toString: toStringError,
-            };
+            return constructNSSObject({
+                builder: builder,
+                mappings: mappings,
+                baseName: elemName,
+                baseClass: classPrefix + elemName,
+                separator: condSep(),
+                afterClass: afterClass,
+                values: args,
+            });
         }
         builder.__nss__ = true;
-        builder.string = builder.s = afterClass;
+        builder.str = builder.s = afterClass;
         var prefix = classPrefix + elemName;
-        space = prefix.length && builder.string.length ? " " : "";
-        builder.class = builder.c = prefix + space + builder.string;
+        var space = prefix.length && builder.str.length ? " " : "";
+        builder.cls = builder.c = prefix + space + builder.str;
         builder.toString = toStringError;
+        builder.props = function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            return constructNSSObject({
+                builder: builder,
+                mappings: mappings,
+                baseName: elemName,
+                baseClass: classPrefix + elemName,
+                separator: condSep(),
+                afterClass: afterClass,
+                values: args,
+                strictBoolChecks: true,
+            });
+        };
         Object.assign(builder, makeCondClassBuilders(builder.c, classPrefix + elemName + condSep()));
         // Set en.elem.name:
         Object.defineProperty(builder, "name", {
@@ -143,35 +150,43 @@ function nss(nameEnum, elemEnum, condEnum, classMap) {
     }));
     var basePriorClass = baseName !== null && baseName !== void 0 ? baseName : "";
     var baseAfterClass = baseClass !== null && baseClass !== void 0 ? baseClass : "";
-    var classPrefix = baseName ? baseName + condSep() : "";
     // Create top-level NSS object (en):
     function mainClsBuilder() {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
             args[_i] = arguments[_i];
         }
-        var str = baseAfterClass;
-        if (args.length) {
-            var composed = composeClass(mainClsBuilder, mappings, classPrefix, args);
-            var space = str.length && composed.length ? " " : "";
-            str += space + composed;
-        }
-        var cls = basePriorClass + (baseName && str.length ? " " : "") + str;
-        return {
-            __nss__: true,
-            name: baseName,
-            class: cls,
-            c: cls,
-            string: str,
-            s: str,
-            toString: toStringError,
-        };
+        return constructNSSObject({
+            builder: mainClsBuilder,
+            mappings: mappings,
+            baseName: baseName !== null && baseName !== void 0 ? baseName : "",
+            baseClass: basePriorClass,
+            separator: condSep(),
+            afterClass: baseAfterClass,
+            values: args,
+        });
     }
     mainClsBuilder.__nss__ = true;
-    mainClsBuilder.class = mainClsBuilder.c =
+    mainClsBuilder.cls = mainClsBuilder.c =
         basePriorClass + (baseName && baseClass ? " " : "") + baseAfterClass;
-    mainClsBuilder.string = mainClsBuilder.s = baseAfterClass;
+    mainClsBuilder.str = mainClsBuilder.s = baseAfterClass;
     mainClsBuilder.toString = toStringError;
+    mainClsBuilder.props = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        return constructNSSObject({
+            builder: mainClsBuilder,
+            mappings: mappings,
+            baseName: baseName !== null && baseName !== void 0 ? baseName : "",
+            baseClass: basePriorClass,
+            separator: condSep(),
+            afterClass: baseAfterClass,
+            values: args,
+            strictBoolChecks: true,
+        });
+    };
     // Set en.name:
     Object.defineProperty(mainClsBuilder, "name", {
         value: baseName,
@@ -204,17 +219,47 @@ function resolveNSSArg(builder, arg) {
     if (__nss__) {
         var cond = builder[name];
         if (cond) {
-            return __nssCondOff__ ? cond(false).string : cond.string;
+            return __nssCondOff__ ? cond(false).str : cond.str;
         }
         else {
-            return arg.string;
+            return arg.str;
         }
     }
     return arg;
 }
 exports.resolveNSSArg = resolveNSSArg;
-function composeClass(builder, mappings, prefix, values) {
-    var _a;
+function constructNSSObject(_a) {
+    var builder = _a.builder, mappings = _a.mappings, baseName = _a.baseName, baseClass = _a.baseClass, separator = _a.separator, afterClass = _a.afterClass, values = _a.values, _b = _a.strictBoolChecks, strictBoolChecks = _b === void 0 ? false : _b;
+    baseName = baseName !== null && baseName !== void 0 ? baseName : "";
+    var space;
+    var str = afterClass;
+    if (values.length) {
+        var composed = composeClass({
+            builder: builder,
+            mappings: mappings,
+            prefix: baseClass + (baseName ? separator : ""),
+            values: values,
+            strictBoolChecks: strictBoolChecks,
+        });
+        space = str.length && composed.length ? " " : "";
+        str += space + composed;
+    }
+    var cls = baseClass;
+    space = cls.length && str.length && str[0] !== " " ? " " : "";
+    cls += space + str;
+    return {
+        __nss__: true,
+        name: baseName,
+        cls: cls,
+        c: cls,
+        str: str,
+        s: str,
+        toString: toStringError,
+    };
+}
+function composeClass(_a) {
+    var _b;
+    var builder = _a.builder, mappings = _a.mappings, prefix = _a.prefix, values = _a.values, _c = _a.strictBoolChecks, strictBoolChecks = _c === void 0 ? false : _c;
     var res = "";
     for (var _i = 0, values_1 = values; _i < values_1.length; _i++) {
         var val = values_1[_i];
@@ -224,7 +269,7 @@ function composeClass(builder, mappings, prefix, values) {
                 // this is a String:
                 throw new Error("Do not pass strings directly; enclose in object or array");
             }
-            else if ((_a = val) === null || _a === void 0 ? void 0 : _a.__nss__) {
+            else if ((_b = val) === null || _b === void 0 ? void 0 : _b.__nss__) {
                 var str = resolveNSSArg(builder, val);
                 res += (str === null || str === void 0 ? void 0 : str.length) ? " " + str : "";
             }
@@ -245,9 +290,11 @@ function composeClass(builder, mappings, prefix, values) {
                         throw new Error("NSS Error: Invalid input ".concat(JSON.stringify(val), "."));
                     }
                 }
-                for (var _b = 0, entries_1 = entries; _b < entries_1.length; _b++) {
-                    var _c = entries_1[_b], name_1 = _c[0], on = _c[1];
-                    if (on) {
+                for (var _d = 0, entries_1 = entries; _d < entries_1.length; _d++) {
+                    var _e = entries_1[_d], name_1 = _e[0], on = _e[1];
+                    if (on === true || // only recognize boolean values
+                        (!strictBoolChecks && on) // unless strictBoolChecks=false
+                    ) {
                         res += " " + prefix + name_1;
                         var mappedCls = mappings === null || mappings === void 0 ? void 0 : mappings.get(name_1);
                         if ((mappedCls === null || mappedCls === void 0 ? void 0 : mappedCls.length) &&
