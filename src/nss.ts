@@ -18,10 +18,14 @@ export type NSSBase<ElemEnum, CondEnum> = {
   [key in keyof ElemEnum]: NSSElemFunc<CondEnum>;
 } & {
   [key in keyof CondEnum]: NSSCondFunc;
+} & {
+  props: (...args: NSSArg<CondEnum>[]) => NSSElem<CondEnum>;
 } & NSSCond;
 
 export type NSSElem<CondEnum> = {
   [key in keyof CondEnum]: NSSCondFunc;
+} & {
+  props: (...args: NSSArg<CondEnum>[]) => NSSElem<CondEnum>;
 } & NSSObject;
 
 export type NSSCond = NSSObject & {
@@ -187,43 +191,40 @@ export default function nss<
 
   const elemClsBuilders = Object.fromEntries(
     Object.entries(elemEnum ?? {}).map(([elemName, elemClass]) => {
-      let space;
       const afterClass =
         elemClass && elemClass !== elemName ? (elemClass as string) : "";
       const classPrefix = baseName ? baseName + elemSep() : "";
 
       function builder(...args: NSSArg<CondEnum>[]) {
-        let str = afterClass;
-        if (args.length) {
-          const composed = composeClass<CondEnum>(
-            builder,
-            mappings,
-            classPrefix + elemName + condSep(),
-            args
-          );
-          space = str.length && composed.length ? " " : "";
-          str += space + composed;
-        }
-        let cls = classPrefix + elemName;
-        space = cls.length && str.length && str[0] !== " " ? " " : "";
-        cls += space + str;
-        return {
-          __nss__: true,
-          name: elemName,
-          cls,
-          c: cls, // alias
-          str,
-          s: str, // alias
-          toString: toStringError,
-        };
+        return constructNSSObject({
+          builder,
+          mappings,
+          baseName: elemName,
+          baseClass: classPrefix + elemName,
+          separator: condSep(),
+          afterClass,
+          values: args,
+        });
       }
 
       builder.__nss__ = true;
       builder.str = builder.s = afterClass;
       const prefix = classPrefix + elemName;
-      space = prefix.length && builder.str.length ? " " : "";
+      const space = prefix.length && builder.str.length ? " " : "";
       builder.cls = builder.c = prefix + space + builder.str;
       builder.toString = toStringError;
+      builder.props = function (...args: NSSArg<CondEnum>[]) {
+        return constructNSSObject({
+          builder,
+          mappings,
+          baseName: elemName,
+          baseClass: classPrefix + elemName,
+          separator: condSep(),
+          afterClass,
+          values: args,
+          strictBoolChecks: true,
+        });
+      };
 
       Object.assign(
         builder,
@@ -242,31 +243,18 @@ export default function nss<
 
   const basePriorClass = baseName ?? "";
   const baseAfterClass = baseClass ?? "";
-  const classPrefix = baseName ? baseName + condSep() : "";
 
   // Create top-level NSS object (en):
   function mainClsBuilder(...args: NSSArg<CondEnum>[]) {
-    let str = baseAfterClass;
-    if (args.length) {
-      const composed = composeClass<CondEnum>(
-        mainClsBuilder,
-        mappings,
-        classPrefix,
-        args
-      );
-      const space = str.length && composed.length ? " " : "";
-      str += space + composed;
-    }
-    const cls = basePriorClass + (baseName && str.length ? " " : "") + str;
-    return {
-      __nss__: true,
-      name: baseName,
-      cls,
-      c: cls, // alias
-      str,
-      s: str, // alias
-      toString: toStringError,
-    };
+    return constructNSSObject({
+      builder: mainClsBuilder,
+      mappings,
+      baseName: baseName ?? "",
+      baseClass: basePriorClass,
+      separator: condSep(),
+      afterClass: baseAfterClass,
+      values: args,
+    });
   }
 
   mainClsBuilder.__nss__ = true;
@@ -274,6 +262,18 @@ export default function nss<
     basePriorClass + (baseName && baseClass ? " " : "") + baseAfterClass;
   mainClsBuilder.str = mainClsBuilder.s = baseAfterClass;
   mainClsBuilder.toString = toStringError;
+  mainClsBuilder.props = function (...args: NSSArg<CondEnum>[]) {
+    return constructNSSObject({
+      builder: mainClsBuilder,
+      mappings,
+      baseName: baseName ?? "",
+      baseClass: basePriorClass,
+      separator: condSep(),
+      afterClass: baseAfterClass,
+      values: args,
+      strictBoolChecks: true,
+    });
+  };
 
   // Set en.name:
   Object.defineProperty(mainClsBuilder, "name", {
@@ -328,12 +328,66 @@ export function resolveNSSArg<CondEnum>(
   return arg;
 }
 
-function composeClass<CondEnum>(
-  builder: NSSObject,
-  mappings: null | Map<string, string>,
-  prefix: string,
-  values: NSSArg<CondEnum>[]
-): string {
+function constructNSSObject<CondEnum>({
+  builder,
+  mappings,
+  baseName,
+  baseClass,
+  separator,
+  afterClass,
+  values,
+  strictBoolChecks = false,
+}: {
+  builder: NSSObject;
+  mappings: null | Map<string, string>;
+  baseName: string;
+  baseClass: string;
+  separator: string;
+  afterClass: string;
+  values: NSSArg<CondEnum>[];
+  strictBoolChecks?: boolean;
+}) {
+  baseName = baseName ?? "";
+  let space;
+  let str = afterClass;
+  if (values.length) {
+    const composed = composeClass<CondEnum>({
+      builder,
+      mappings,
+      prefix: baseClass + (baseName ? separator : ""),
+      values,
+      strictBoolChecks,
+    });
+    space = str.length && composed.length ? " " : "";
+    str += space + composed;
+  }
+  let cls = baseClass;
+  space = cls.length && str.length && str[0] !== " " ? " " : "";
+  cls += space + str;
+  return {
+    __nss__: true,
+    name: baseName,
+    cls,
+    c: cls, // alias
+    str,
+    s: str, // alias
+    toString: toStringError,
+  };
+}
+
+function composeClass<CondEnum>({
+  builder,
+  mappings,
+  prefix,
+  values,
+  strictBoolChecks = false,
+}: {
+  builder: NSSObject;
+  mappings: null | Map<string, string>;
+  prefix: string;
+  values: NSSArg<CondEnum>[];
+  strictBoolChecks?: boolean;
+}): string {
   let res = "";
   for (const val of values) {
     // filter out null, undefined, false, 0, "":
@@ -362,7 +416,10 @@ function composeClass<CondEnum>(
           }
         }
         for (const [name, on] of entries) {
-          if (on) {
+          if (
+            on === true || // only recognize boolean values
+            (!strictBoolChecks && on) // unless strictBoolChecks=false
+          ) {
             res += " " + prefix + name;
             const mappedCls = mappings?.get(name as string);
             if (
