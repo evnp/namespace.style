@@ -1,8 +1,11 @@
-NSS · Namespace Style
+NSS · namespace.style
 ---
-A structured, type-safe link between CSS and HTML.
+A zero-dependency CSS class composer, bringing structure + types to the intersection between HTML + CSS.
 
-> Namespaces are one honking great idea -- let's do more of those!
-– Tim Peters
+> Namespaces are one honking great idea – let's do more of those!
 
-_WORK IN PROGRESS_
+*– Tim Peters*
+
+🚧 **Full documentation coming soon** 🚧
+
+Until then, please refer to https://github.com/evnp/namespace.style/blob/main/test/nss.test.ts
