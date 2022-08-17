@@ -1,7 +1,7 @@
 {
   "name": "namespacestyle",
-  "version": "0.0.10",
-  "description": "A structured, type-safe link between CSS and HTML.",
+  "version": "0.0.11",
+  "description": "A zero-dependency CSS class composer, bringing structure · types to the intersection between HTML · CSS",
   "main": "nss.js",
   "types": "nss.d.ts",
   "files": [
@@ -19,7 +19,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/evnp/nss.git"
+    "url": "git+https://github.com/evnp/namespacestyle.git"
   },
   "keywords": [
     "css",
@@ -30,9 +30,9 @@
   "author": "Evan Purcer",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/evnp/nss/issues"
+    "url": "https://github.com/evnp/namespacestyle/issues"
   },
-  "homepage": "https://github.com/evnp/nss#readme",
+  "homepage": "https://github.com/evnp/namespacestyle#readme",
   "devDependencies": {
     "@types/jest": "^27.0.3",
     "@typescript-eslint/eslint-plugin": "^5.8.1",
