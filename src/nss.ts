@@ -17,13 +17,13 @@ export type NSSObject = {
 export type NSSBase<ElemEnum, CondEnum> = {
   [key in keyof ElemEnum]: NSSElemFunc<CondEnum>;
 } & {
-  [key in keyof CondEnum]: NSSCondFunc;
+  [key in keyof CondEnum]: NSSCondFunc<CondEnum>;
 } & {
   props: (...args: NSSArg<CondEnum>[]) => NSSElem<CondEnum>;
 } & NSSCond;
 
 export type NSSElem<CondEnum> = {
-  [key in keyof CondEnum]: NSSCondFunc;
+  [key in keyof CondEnum]: NSSCondFunc<CondEnum>;
 } & {
   props: (...args: NSSArg<CondEnum>[]) => NSSElem<CondEnum>;
 } & NSSObject;
@@ -38,13 +38,14 @@ export type NSSBaseFunc<ElemEnum, CondEnum> = NSSBase<ElemEnum, CondEnum> &
 export type NSSElemFunc<CondEnum> = NSSElem<CondEnum> &
   ((...args: NSSArg<CondEnum>[]) => NSSCond);
 
-export type NSSCondFunc = NSSCond & ((on?: unknown) => NSSCond);
+export type NSSCondFunc<CondEnum> = NSSCond &
+  ((on?: unknown) => NSSCond & NSSElem<CondEnum>);
 
 export type NSSArg<CondEnum> =
   | NSSElem<CondEnum>
   | NSSElemFunc<CondEnum>
   | NSSCond
-  | NSSCondFunc
+  | NSSCondFunc<CondEnum>
   | string[]
   | Record<string, unknown>;
 
@@ -368,7 +369,9 @@ export function resolveNSSArg<CondEnum>(
 ): string | NSSArg<CondEnum> {
   const { __nss__, __nssCondOff__, name } = arg as NSSCond;
   if (__nss__) {
-    const cond = (builder as unknown as Record<string, NSSCondFunc>)[name];
+    const cond = (builder as unknown as Record<string, NSSCondFunc<CondEnum>>)[
+      name
+    ];
     if (cond) {
       return __nssCondOff__ ? cond(false).str : cond.str;
     } else {
