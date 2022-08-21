@@ -36,7 +36,7 @@ export type NSSBaseFunc<ElemEnum, CondEnum> = NSSBase<ElemEnum, CondEnum> &
   ((...args: NSSArg<CondEnum>[]) => NSSElem<CondEnum>);
 
 export type NSSElemFunc<CondEnum> = NSSElem<CondEnum> &
-  ((...args: NSSArg<CondEnum>[]) => NSSCond);
+  ((...args: NSSArg<CondEnum>[]) => NSSElem<CondEnum>);
 
 export type NSSCondFunc<CondEnum> = NSSCond &
   ((on?: unknown) => NSSCond & NSSElem<CondEnum>);
@@ -166,72 +166,69 @@ export default function nss<
     Object.entries(condEnum ?? {}).map(crossPollinate)
   ) as typeof condEnum;
 
-  function makeCondClassBuilders(
-    classPrelude: string | null,
-    classPrefix: string
-  ) {
-    function makeBuilders() {
-      return Object.fromEntries(
-        Object.entries(condEnum ?? {}).map(([condName, condClass]) => {
-          const priorClass = classPrelude ? classPrelude + " " : "";
-          const afterClass =
-            condClass && condClass !== condName ? " " + condClass : "";
+  function buildCondObjects(classPrelude: string | null, classPrefix: string) {
+    return Object.fromEntries(
+      Object.entries(condEnum ?? {}).map(([condName, condClass]) => {
+        const priorClass = classPrelude ? classPrelude + " " : "";
+        const afterClass =
+          condClass && condClass !== condName ? " " + condClass : "";
 
-          function builder(on?: unknown) {
-            // note: standard function rather than arrow-function needed here
-            //       so that arguments.length can be correctly inspected;
-            //       allows distinction between myCls() and myCls(undefined) calls
-            let str: string;
-            let cls: string;
-            let __nssCondOff__;
-            if (!arguments.length || on) {
-              __nssCondOff__ = false;
-              str = classPrefix + condName + afterClass;
-              cls = priorClass + str;
-            } else {
-              __nssCondOff__ = true;
-              str = "";
-              cls = classPrelude ?? "";
-            }
-            return {
-              __nss__: true,
-              ...(__nssCondOff__ ? { __nssCondOff__: true } : {}),
-              name: condName,
-              cls,
-              c: cls, // alias
-              str,
-              s: str, // alias
-              toString: toStringError,
-            };
+        function nssCondObject(on?: unknown) {
+          // note: standard function rather than arrow-function needed here
+          //       so that arguments.length can be correctly inspected;
+          //       allows distinction between myCls() and myCls(undefined) calls
+          let str: string;
+          let cls: string;
+          let __nssCondOff__;
+          if (!arguments.length || on) {
+            __nssCondOff__ = false;
+            str = classPrefix + condName + afterClass;
+            cls = priorClass + str;
+          } else {
+            __nssCondOff__ = true;
+            str = "";
+            cls = classPrelude ?? "";
           }
+          const nssObject = {
+            __nss__: true,
+            ...(__nssCondOff__ ? { __nssCondOff__: true } : {}),
+            name: condName,
+            cls,
+            c: cls, // alias
+            str,
+            s: str, // alias
+            toString: toStringError,
+          };
+          Object.assign(nssObject, buildCondObjects(cls, classPrefix));
+          return nssObject;
+        }
 
-          builder.__nss__ = true;
-          builder.str = builder.s = classPrefix + condName + afterClass;
-          builder.cls = builder.c = priorClass + builder.str;
-          builder.toString = toStringError;
+        nssCondObject.__nss__ = true;
+        nssCondObject.str = nssCondObject.s =
+          classPrefix + condName + afterClass;
+        nssCondObject.cls = nssCondObject.c = priorClass + nssCondObject.str;
+        nssCondObject.toString = toStringError;
 
-          // Set n.cond.name:
-          Object.defineProperty(builder, "name", {
-            value: condName,
-            writable: false,
-          });
+        // Set n.cond.name:
+        Object.defineProperty(nssCondObject, "name", {
+          value: condName,
+          writable: false,
+        });
 
-          return [condName, builder];
-        })
-      );
-    }
-    return makeBuilders();
+        return [condName, nssCondObject];
+      })
+    );
   }
 
-  const elemClsBuilders = Object.fromEntries(
+  const nssElemObjects = Object.fromEntries(
     Object.entries(elemEnum ?? {}).map(([elemName, elemClass]) => {
       const afterClass =
         elemClass && elemClass !== elemName ? (elemClass as string) : "";
       const classPrefix = baseName ? baseName + elementSeparator : "";
 
-      function builder(...args: NSSArg<CondEnum>[]) {
-        return constructNSSObject({
-          builder,
+      function nssElemObject(...args: NSSArg<CondEnum>[]) {
+        const nssObject = constructNSSObject({
+          parent: nssElemObject,
           mappings,
           mappingsLowercase,
           baseName: elemName,
@@ -243,17 +240,25 @@ export default function nss<
           strictBoolChecks: false,
           acceptArbitraryStrings: true,
         });
+        Object.assign(
+          nssObject,
+          buildCondObjects(
+            nssObject.c,
+            classPrefix + elemName + conditionalSeparator
+          )
+        );
+        return nssObject;
       }
 
-      builder.__nss__ = true;
-      builder.str = builder.s = afterClass;
+      nssElemObject.__nss__ = true;
+      nssElemObject.str = nssElemObject.s = afterClass;
       const prefix = classPrefix + elemName;
-      const space = prefix.length && builder.str.length ? " " : "";
-      builder.cls = builder.c = prefix + space + builder.str;
-      builder.toString = toStringError;
-      builder.props = function (...args: NSSArg<CondEnum>[]) {
-        return constructNSSObject({
-          builder,
+      const space = prefix.length && nssElemObject.str.length ? " " : "";
+      nssElemObject.cls = nssElemObject.c = prefix + space + nssElemObject.str;
+      nssElemObject.toString = toStringError;
+      nssElemObject.props = function (...args: NSSArg<CondEnum>[]) {
+        const nssObject = constructNSSObject({
+          parent: nssElemObject,
           mappings,
           mappingsLowercase,
           baseName: elemName,
@@ -265,23 +270,31 @@ export default function nss<
           strictBoolChecks: true,
           acceptArbitraryStrings: false,
         });
+        Object.assign(
+          nssObject,
+          buildCondObjects(
+            nssObject.c,
+            classPrefix + elemName + conditionalSeparator
+          )
+        );
+        return nssObject;
       };
 
       Object.assign(
-        builder,
-        makeCondClassBuilders(
-          builder.c,
+        nssElemObject,
+        buildCondObjects(
+          nssElemObject.c,
           classPrefix + elemName + conditionalSeparator
         )
       );
 
       // Set n.elem.name:
-      Object.defineProperty(builder, "name", {
+      Object.defineProperty(nssElemObject, "name", {
         value: elemName,
         writable: false,
       });
 
-      return [elemName, builder];
+      return [elemName, nssElemObject];
     })
   );
 
@@ -289,9 +302,9 @@ export default function nss<
   const baseAfterClass = baseClass ?? "";
 
   // Create top-level NSS object (en):
-  function mainClsBuilder(...args: NSSArg<CondEnum>[]) {
-    return constructNSSObject({
-      builder: mainClsBuilder,
+  function nssMainObject(...args: NSSArg<CondEnum>[]) {
+    const nssObject = constructNSSObject({
+      parent: nssMainObject,
       mappings,
       mappingsLowercase,
       baseName: baseName ?? "",
@@ -303,16 +316,25 @@ export default function nss<
       strictBoolChecks: false,
       acceptArbitraryStrings: true,
     });
+    Object.assign(nssMainObject, nssElemObjects);
+    Object.assign(
+      nssObject,
+      buildCondObjects(
+        nssMainObject.c,
+        baseName ? baseName + conditionalSeparator : ""
+      )
+    );
+    return nssObject;
   }
 
-  mainClsBuilder.__nss__ = true;
-  mainClsBuilder.cls = mainClsBuilder.c =
+  nssMainObject.__nss__ = true;
+  nssMainObject.cls = nssMainObject.c =
     basePriorClass + (baseName && baseClass ? " " : "") + baseAfterClass;
-  mainClsBuilder.str = mainClsBuilder.s = baseAfterClass;
-  mainClsBuilder.toString = toStringError;
-  mainClsBuilder.props = function (...args: NSSArg<CondEnum>[]) {
-    return constructNSSObject({
-      builder: mainClsBuilder,
+  nssMainObject.str = nssMainObject.s = baseAfterClass;
+  nssMainObject.toString = toStringError;
+  nssMainObject.props = function (...args: NSSArg<CondEnum>[]) {
+    const nssObject = constructNSSObject({
+      parent: nssMainObject,
       mappings,
       mappingsLowercase,
       baseName: baseName ?? "",
@@ -324,10 +346,19 @@ export default function nss<
       strictBoolChecks: true,
       acceptArbitraryStrings: false,
     });
+    Object.assign(nssMainObject, nssElemObjects);
+    Object.assign(
+      nssObject,
+      buildCondObjects(
+        nssMainObject.c,
+        baseName ? baseName + conditionalSeparator : ""
+      )
+    );
+    return nssObject;
   };
 
   // Set n.name:
-  Object.defineProperty(mainClsBuilder, "name", {
+  Object.defineProperty(nssMainObject, "name", {
     value: baseName,
     writable: false,
   });
@@ -335,27 +366,27 @@ export default function nss<
   // Set n.<baseName>:
   // eg. n.Ship.s
   if (baseName) {
-    Object.defineProperty(mainClsBuilder, baseName, {
-      value: mainClsBuilder,
+    Object.defineProperty(nssMainObject, baseName, {
+      value: nssMainObject,
       writable: false,
     });
   }
 
   // Set n.elemA, n.elemB, etc:
   // eg. n.engine.s
-  Object.assign(mainClsBuilder, elemClsBuilders);
+  Object.assign(nssMainObject, nssElemObjects);
 
   // Set n.condA, n.condB, etc:
   // eg. n.part.s
   Object.assign(
-    mainClsBuilder,
-    makeCondClassBuilders(
-      mainClsBuilder.c,
+    nssMainObject,
+    buildCondObjects(
+      nssMainObject.c,
       baseName ? baseName + conditionalSeparator : ""
     )
   );
 
-  return mainClsBuilder as unknown as NSS<NameEnum, ElemEnum, CondEnum>;
+  return nssMainObject as unknown as NSS<NameEnum, ElemEnum, CondEnum>;
 }
 
 // resolveNSSArg maps basic cond expressions (eg. n.myCond) to their corresponding
@@ -382,7 +413,7 @@ export function resolveNSSArg<CondEnum>(
 }
 
 function constructNSSObject<CondEnum>({
-  builder,
+  parent,
   mappings,
   mappingsLowercase,
   baseName,
@@ -394,7 +425,7 @@ function constructNSSObject<CondEnum>({
   strictBoolChecks,
   acceptArbitraryStrings,
 }: {
-  builder: NSSObject;
+  parent: NSSObject;
   mappings: Map<string, string>;
   mappingsLowercase: Map<string, string>;
   baseName: string;
@@ -421,12 +452,15 @@ function constructNSSObject<CondEnum>({
         "apart from casing; this causes ambiguity when using .props(...)"
     );
   }
+
   baseName = baseName ?? "";
+
   let space;
   let str = afterClass;
+
   if (values.length) {
     const composed = composeClass<CondEnum>({
-      builder,
+      parent,
       mappings,
       mappingsLowercase,
       prefix: baseClass + (baseName ? separator : ""),
@@ -438,10 +472,13 @@ function constructNSSObject<CondEnum>({
     space = str.length && composed.length ? " " : "";
     str += space + composed;
   }
+
   let cls = baseClass;
+
   space = cls.length && str.length && str[0] !== " " ? " " : "";
   cls += space + str;
-  return {
+
+  const nssObject = {
     __nss__: true,
     name: baseName,
     cls,
@@ -450,10 +487,12 @@ function constructNSSObject<CondEnum>({
     s: str, // alias
     toString: toStringError,
   };
+
+  return nssObject;
 }
 
 function composeClass<CondEnum>({
-  builder,
+  parent,
   mappings,
   mappingsLowercase,
   prefix,
@@ -462,7 +501,7 @@ function composeClass<CondEnum>({
   strictBoolChecks,
   acceptArbitraryStrings,
 }: {
-  builder: NSSObject;
+  parent: NSSObject;
   mappings: Map<string, string>;
   mappingsLowercase: Map<string, string>;
   prefix: string;
@@ -481,7 +520,7 @@ function composeClass<CondEnum>({
           "Do not pass strings directly; enclose in object or array"
         );
       } else if ((val as NSSObject)?.__nss__) {
-        const str = resolveNSSArg(builder, val) as string;
+        const str = resolveNSSArg(parent, val) as string;
         res += str?.length ? " " + str : "";
       } else {
         // this is an Object or Array:

@@ -28,7 +28,7 @@ export declare type NSSCond = NSSObject & {
     __nssCondOff__?: boolean;
 };
 export declare type NSSBaseFunc<ElemEnum, CondEnum> = NSSBase<ElemEnum, CondEnum> & ((...args: NSSArg<CondEnum>[]) => NSSElem<CondEnum>);
-export declare type NSSElemFunc<CondEnum> = NSSElem<CondEnum> & ((...args: NSSArg<CondEnum>[]) => NSSCond);
+export declare type NSSElemFunc<CondEnum> = NSSElem<CondEnum> & ((...args: NSSArg<CondEnum>[]) => NSSElem<CondEnum>);
 export declare type NSSCondFunc<CondEnum> = NSSCond & ((on?: unknown) => NSSCond & NSSElem<CondEnum>);
 export declare type NSSArg<CondEnum> = NSSElem<CondEnum> | NSSElemFunc<CondEnum> | NSSCond | NSSCondFunc<CondEnum> | string[] | Record<string, unknown>;
 export declare type NSSClassMap<NameEnum, ElemEnum, CondEnum> = Partial<Record<keyof NameEnum | keyof ElemEnum | keyof CondEnum, string>>;
