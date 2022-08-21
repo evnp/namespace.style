@@ -15,7 +15,8 @@
     "test": "jest",
     "lint": "eslint src/ test/",
     "format": "eslint --fix src/ test/",
-    "minify": "esbuild --minify --target=es5 nss.js > nss.min.js && gzip -kf9 nss.min.js && echo \"nss.min.js.gz :: $( ls -lh nss.min.js.gz | tr -s ' ' | cut -d' ' -f5 ) :: $( ls -l nss.min.js.gz | tr -s ' ' | cut -d' ' -f5 )B\""
+    "minify": "esbuild --minify --target=es5 nss.js > nss.min.js && gzip -kf9 nss.min.js && echo \"nss.min.js.gz :: $( ls -lh nss.min.js.gz | tr -s ' ' | cut -d' ' -f5 ) :: $( ls -l nss.min.js.gz | tr -s ' ' | cut -d' ' -f5 )B\"",
+    "repl": "node nss.repl.js"
   },
   "repository": {
     "type": "git",
