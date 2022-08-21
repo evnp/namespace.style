@@ -55,11 +55,13 @@ export type NSSClassMap<NameEnum, ElemEnum, CondEnum> = Partial<
 export type NSSConfig = {
   elementSeparator: string;
   conditionalSeparator: string;
+  caseSensitiveProps: boolean;
 };
 
 const defaultConfig: NSSConfig = {
   elementSeparator: "-",
   conditionalSeparator: "--",
+  caseSensitiveProps: false,
 };
 
 const config = { ...defaultConfig };
@@ -103,6 +105,16 @@ export default function nss<
     CondEnum
   >(nameEnum, classMap);
 
+  // Cross-pollinate class mappings between enums and auxilliary mapping object:
+  const mapEntries = Object.entries(classMap ?? []);
+  const mappings = new Map(mapEntries);
+  const mappingsLowercase = new Map(
+    mapEntries.map(([k]) => [k.toLowerCase(), k])
+  );
+  if (baseName) {
+    mappings.set(baseName, baseClass ?? null);
+    mappingsLowercase.set(baseName.toLowerCase(), baseName);
+  }
   function crossPollinate([name, cls]: [string, unknown]): [string, unknown] {
     const mappedCls = mappings.get(name);
     if (mappedCls) {
@@ -113,17 +125,12 @@ export default function nss<
       }
     } else if (typeof cls === "string" && cls.length) {
       mappings.set(name, cls);
+      mappingsLowercase.set(name.toLowerCase(), name);
     } else {
       mappings.set(name, null);
+      mappingsLowercase.set(name.toLowerCase(), name);
     }
     return [name, cls];
-  }
-
-  // Cross-pollinate class mappings between enums and auxilliary mapping object:
-  const mapEntries = Object.entries(classMap ?? []);
-  const mappings = new Map(mapEntries);
-  if (baseName) {
-    mappings.set(baseName, baseClass ?? null);
   }
   elemEnum = Object.fromEntries(
     Object.entries(elemEnum ?? {}).map(crossPollinate)
@@ -199,11 +206,15 @@ export default function nss<
         return constructNSSObject({
           builder,
           mappings,
+          mappingsLowercase,
           baseName: elemName,
           baseClass: classPrefix + elemName,
           separator: condSep(),
           afterClass,
           values: args,
+          caseSensitive: true,
+          strictBoolChecks: false,
+          acceptArbitraryStrings: true,
         });
       }
 
@@ -217,12 +228,15 @@ export default function nss<
         return constructNSSObject({
           builder,
           mappings,
+          mappingsLowercase,
           baseName: elemName,
           baseClass: classPrefix + elemName,
           separator: condSep(),
           afterClass,
           values: args,
+          caseSensitive: config.caseSensitiveProps,
           strictBoolChecks: true,
+          acceptArbitraryStrings: false,
         });
       };
 
@@ -249,11 +263,15 @@ export default function nss<
     return constructNSSObject({
       builder: mainClsBuilder,
       mappings,
+      mappingsLowercase,
       baseName: baseName ?? "",
       baseClass: basePriorClass,
       separator: condSep(),
       afterClass: baseAfterClass,
       values: args,
+      caseSensitive: true,
+      strictBoolChecks: false,
+      acceptArbitraryStrings: true,
     });
   }
 
@@ -266,12 +284,15 @@ export default function nss<
     return constructNSSObject({
       builder: mainClsBuilder,
       mappings,
+      mappingsLowercase,
       baseName: baseName ?? "",
       baseClass: basePriorClass,
       separator: condSep(),
       afterClass: baseAfterClass,
       values: args,
+      caseSensitive: config.caseSensitiveProps,
       strictBoolChecks: true,
+      acceptArbitraryStrings: false,
     });
   };
 
@@ -331,22 +352,43 @@ export function resolveNSSArg<CondEnum>(
 function constructNSSObject<CondEnum>({
   builder,
   mappings,
+  mappingsLowercase,
   baseName,
   baseClass,
   separator,
   afterClass,
   values,
-  strictBoolChecks = false,
+  caseSensitive,
+  strictBoolChecks,
+  acceptArbitraryStrings,
 }: {
   builder: NSSObject;
-  mappings: null | Map<string, string>;
+  mappings: Map<string, string>;
+  mappingsLowercase: Map<string, string>;
   baseName: string;
   baseClass: string;
   separator: string;
   afterClass: string;
   values: NSSArg<CondEnum>[];
-  strictBoolChecks?: boolean;
+  caseSensitive: boolean;
+  strictBoolChecks: boolean;
+  acceptArbitraryStrings: boolean;
 }) {
+  if (!caseSensitive && mappings.size != mappingsLowercase.size) {
+    const keys = Array.from(mappings.keys());
+    let conflictKeys: string[] = [];
+    Array.from(mappings.keys()).find((key) => {
+      conflictKeys = keys.filter((k) => k.toLowerCase() === key.toLowerCase());
+      return conflictKeys.length > 1;
+    });
+    const conflict = conflictKeys.length
+      ? conflictKeys.map((k) => `"${k}"`).join(", ") + " "
+      : "";
+    throw new Error(
+      `You're using multiple class names ${conflict}that are identical ` +
+        "apart from casing; this causes ambiguity when using .props(...)"
+    );
+  }
   baseName = baseName ?? "";
   let space;
   let str = afterClass;
@@ -354,9 +396,12 @@ function constructNSSObject<CondEnum>({
     const composed = composeClass<CondEnum>({
       builder,
       mappings,
+      mappingsLowercase,
       prefix: baseClass + (baseName ? separator : ""),
       values,
+      caseSensitive,
       strictBoolChecks,
+      acceptArbitraryStrings,
     });
     space = str.length && composed.length ? " " : "";
     str += space + composed;
@@ -378,15 +423,21 @@ function constructNSSObject<CondEnum>({
 function composeClass<CondEnum>({
   builder,
   mappings,
+  mappingsLowercase,
   prefix,
   values,
-  strictBoolChecks = false,
+  caseSensitive,
+  strictBoolChecks,
+  acceptArbitraryStrings,
 }: {
   builder: NSSObject;
-  mappings: null | Map<string, string>;
+  mappings: Map<string, string>;
+  mappingsLowercase: Map<string, string>;
   prefix: string;
   values: NSSArg<CondEnum>[];
-  strictBoolChecks?: boolean;
+  caseSensitive: boolean;
+  strictBoolChecks: boolean;
+  acceptArbitraryStrings: boolean;
 }): string {
   let res = "";
   for (const val of values) {
@@ -420,8 +471,28 @@ function composeClass<CondEnum>({
             on === true || // only recognize boolean values
             (!strictBoolChecks && on) // unless strictBoolChecks=false
           ) {
-            res += " " + prefix + name;
-            const mappedCls = mappings?.get(name as string);
+            //console.log([name, on]);
+            if (!acceptArbitraryStrings) {
+              if (caseSensitive) {
+                if (!mappings.has(name)) {
+                  continue;
+                }
+              } else {
+                if (!mappingsLowercase.has(name.toLowerCase())) {
+                  continue;
+                }
+              }
+            }
+            if (caseSensitive) {
+              res += " " + prefix + name;
+            } else {
+              res += " " + prefix + mappingsLowercase.get(name.toLowerCase());
+            }
+            const mappedCls = caseSensitive
+              ? mappings.get(name)
+              : mappings.get(
+                  mappingsLowercase.get(name.toLowerCase()) as string
+                );
             if (
               mappedCls?.length &&
               (typeof mappedCls === "string" ||
@@ -430,12 +501,6 @@ function composeClass<CondEnum>({
               res += " " + mappedCls;
             }
           }
-          // Ignore classes associated with all other `on` values, even those
-          // that are "truthy". This allows easily passing props objects into
-          // nss where boolean props are meant to be used as classes, but
-          // all other props should be ignored.
-          // If "truthiness" checks are desired, input must simply be cast to
-          // bool first, eg. en({ myclass: !!myprop })
         }
       }
     }

@@ -15,6 +15,7 @@ exports.resolveNSSArg = void 0;
 var defaultConfig = {
     elementSeparator: "-",
     conditionalSeparator: "--",
+    caseSensitiveProps: false,
 };
 var config = __assign({}, defaultConfig);
 function toStringError() {
@@ -32,6 +33,17 @@ function nss(nameEnum, elemEnum, condEnum, classMap) {
         classMap = (_a = classMap(classMapRet)) !== null && _a !== void 0 ? _a : classMapRet;
     }
     var _b = extractNameEnumData(nameEnum, classMap), baseName = _b[0], baseClass = _b[1];
+    // Cross-pollinate class mappings between enums and auxilliary mapping object:
+    var mapEntries = Object.entries(classMap !== null && classMap !== void 0 ? classMap : []);
+    var mappings = new Map(mapEntries);
+    var mappingsLowercase = new Map(mapEntries.map(function (_a) {
+        var k = _a[0], v = _a[1];
+        return [k.toLowerCase(), v];
+    }));
+    if (baseName) {
+        mappings.set(baseName, baseClass !== null && baseClass !== void 0 ? baseClass : null);
+        mappingsLowercase.set(baseName.toLowerCase(), baseClass !== null && baseClass !== void 0 ? baseClass : null);
+    }
     function crossPollinate(_a) {
         var name = _a[0], cls = _a[1];
         var mappedCls = mappings.get(name);
@@ -45,17 +57,13 @@ function nss(nameEnum, elemEnum, condEnum, classMap) {
         }
         else if (typeof cls === "string" && cls.length) {
             mappings.set(name, cls);
+            mappingsLowercase.set(name.toLowerCase(), cls);
         }
         else {
             mappings.set(name, null);
+            mappingsLowercase.set(name.toLowerCase(), null);
         }
         return [name, cls];
-    }
-    // Cross-pollinate class mappings between enums and auxilliary mapping object:
-    var mapEntries = Object.entries(classMap !== null && classMap !== void 0 ? classMap : []);
-    var mappings = new Map(mapEntries);
-    if (baseName) {
-        mappings.set(baseName, baseClass !== null && baseClass !== void 0 ? baseClass : null);
     }
     elemEnum = Object.fromEntries(Object.entries(elemEnum !== null && elemEnum !== void 0 ? elemEnum : {}).map(crossPollinate));
     condEnum = Object.fromEntries(Object.entries(condEnum !== null && condEnum !== void 0 ? condEnum : {}).map(crossPollinate));
@@ -111,11 +119,14 @@ function nss(nameEnum, elemEnum, condEnum, classMap) {
             return constructNSSObject({
                 builder: builder,
                 mappings: mappings,
+                mappingsLowercase: mappingsLowercase,
                 baseName: elemName,
                 baseClass: classPrefix + elemName,
                 separator: condSep(),
                 afterClass: afterClass,
                 values: args,
+                caseSensitive: true,
+                strictBoolChecks: false,
             });
         }
         builder.__nss__ = true;
@@ -132,11 +143,13 @@ function nss(nameEnum, elemEnum, condEnum, classMap) {
             return constructNSSObject({
                 builder: builder,
                 mappings: mappings,
+                mappingsLowercase: mappingsLowercase,
                 baseName: elemName,
                 baseClass: classPrefix + elemName,
                 separator: condSep(),
                 afterClass: afterClass,
                 values: args,
+                caseSensitive: config.caseSensitiveProps,
                 strictBoolChecks: true,
             });
         };
@@ -159,11 +172,14 @@ function nss(nameEnum, elemEnum, condEnum, classMap) {
         return constructNSSObject({
             builder: mainClsBuilder,
             mappings: mappings,
+            mappingsLowercase: mappingsLowercase,
             baseName: baseName !== null && baseName !== void 0 ? baseName : "",
             baseClass: basePriorClass,
             separator: condSep(),
             afterClass: baseAfterClass,
             values: args,
+            caseSensitive: true,
+            strictBoolChecks: false,
         });
     }
     mainClsBuilder.__nss__ = true;
@@ -179,11 +195,13 @@ function nss(nameEnum, elemEnum, condEnum, classMap) {
         return constructNSSObject({
             builder: mainClsBuilder,
             mappings: mappings,
+            mappingsLowercase: mappingsLowercase,
             baseName: baseName !== null && baseName !== void 0 ? baseName : "",
             baseClass: basePriorClass,
             separator: condSep(),
             afterClass: baseAfterClass,
             values: args,
+            caseSensitive: config.caseSensitiveProps,
             strictBoolChecks: true,
         });
     };
@@ -229,7 +247,20 @@ function resolveNSSArg(builder, arg) {
 }
 exports.resolveNSSArg = resolveNSSArg;
 function constructNSSObject(_a) {
-    var builder = _a.builder, mappings = _a.mappings, baseName = _a.baseName, baseClass = _a.baseClass, separator = _a.separator, afterClass = _a.afterClass, values = _a.values, _b = _a.strictBoolChecks, strictBoolChecks = _b === void 0 ? false : _b;
+    var builder = _a.builder, mappings = _a.mappings, mappingsLowercase = _a.mappingsLowercase, baseName = _a.baseName, baseClass = _a.baseClass, separator = _a.separator, afterClass = _a.afterClass, values = _a.values, caseSensitive = _a.caseSensitive, strictBoolChecks = _a.strictBoolChecks;
+    if (!caseSensitive && mappings.size != mappingsLowercase.size) {
+        var keys_1 = Array.from(mappings.keys());
+        var conflictKeys_1 = [];
+        Array.from(mappings.keys()).find(function (key) {
+            conflictKeys_1 = keys_1.filter(function (k) { return k.toLowerCase() === key.toLowerCase(); });
+            return conflictKeys_1.length > 1;
+        });
+        var conflict = conflictKeys_1.length
+            ? conflictKeys_1.map(function (k) { return "\"".concat(k, "\""); }).join(", ") + " "
+            : "";
+        throw new Error("You're using multiple class names ".concat(conflict, "that are identical ") +
+            "apart from casing; this causes ambiguity when using .props(...)");
+    }
     baseName = baseName !== null && baseName !== void 0 ? baseName : "";
     var space;
     var str = afterClass;
@@ -237,8 +268,10 @@ function constructNSSObject(_a) {
         var composed = composeClass({
             builder: builder,
             mappings: mappings,
+            mappingsLowercase: mappingsLowercase,
             prefix: baseClass + (baseName ? separator : ""),
             values: values,
+            caseSensitive: caseSensitive,
             strictBoolChecks: strictBoolChecks,
         });
         space = str.length && composed.length ? " " : "";
@@ -259,7 +292,7 @@ function constructNSSObject(_a) {
 }
 function composeClass(_a) {
     var _b;
-    var builder = _a.builder, mappings = _a.mappings, prefix = _a.prefix, values = _a.values, _c = _a.strictBoolChecks, strictBoolChecks = _c === void 0 ? false : _c;
+    var builder = _a.builder, mappings = _a.mappings, mappingsLowercase = _a.mappingsLowercase, prefix = _a.prefix, values = _a.values, caseSensitive = _a.caseSensitive, strictBoolChecks = _a.strictBoolChecks;
     var res = "";
     for (var _i = 0, values_1 = values; _i < values_1.length; _i++) {
         var val = values_1[_i];
@@ -290,25 +323,21 @@ function composeClass(_a) {
                         throw new Error("NSS Error: Invalid input ".concat(JSON.stringify(val), "."));
                     }
                 }
-                for (var _d = 0, entries_1 = entries; _d < entries_1.length; _d++) {
-                    var _e = entries_1[_d], name_1 = _e[0], on = _e[1];
+                for (var _c = 0, entries_1 = entries; _c < entries_1.length; _c++) {
+                    var _d = entries_1[_c], name_1 = _d[0], on = _d[1];
                     if (on === true || // only recognize boolean values
                         (!strictBoolChecks && on) // unless strictBoolChecks=false
                     ) {
                         res += " " + prefix + name_1;
-                        var mappedCls = mappings === null || mappings === void 0 ? void 0 : mappings.get(name_1);
+                        var mappedCls = !caseSensitive
+                            ? mappingsLowercase.get(name_1)
+                            : mappings.get(name_1);
                         if ((mappedCls === null || mappedCls === void 0 ? void 0 : mappedCls.length) &&
                             (typeof mappedCls === "string" ||
                                 mappedCls instanceof String)) {
                             res += " " + mappedCls;
                         }
                     }
-                    // Ignore classes associated with all other `on` values, even those
-                    // that are "truthy". This allows easily passing props objects into
-                    // nss where boolean props are meant to be used as classes, but
-                    // all other props should be ignored.
-                    // If "truthiness" checks are desired, input must simply be cast to
-                    // bool first, eg. en({ myclass: !!myprop })
                 }
             }
         }

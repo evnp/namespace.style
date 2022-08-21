@@ -35,6 +35,7 @@ export declare type NSSClassMap<NameEnum, ElemEnum, CondEnum> = Partial<Record<k
 export declare type NSSConfig = {
     elementSeparator: string;
     conditionalSeparator: string;
+    caseSensitiveProps: boolean;
 };
 declare function nss<NameEnum = object, ElemEnum = object, CondEnum = object>(nameEnum?: null | Record<keyof NameEnum, string | number | boolean>, elemEnum?: null | Record<keyof ElemEnum, string | number | boolean>, condEnum?: null | Record<keyof CondEnum, string | number | boolean>, classMap?: null | NSSClassMap<NameEnum, ElemEnum, CondEnum> | ((classMap: NSSClassMap<NameEnum, ElemEnum, CondEnum>) => void | NSSClassMap<NameEnum, ElemEnum, CondEnum>)): NSS<NameEnum, ElemEnum, CondEnum>;
 declare namespace nss {
