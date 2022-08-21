@@ -13,18 +13,46 @@ var __assign = (this && this.__assign) || function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.resolveNSSArg = void 0;
 var defaultConfig = {
-    elementSeparator: "-",
-    conditionalSeparator: "--",
+    separator: "",
+    elementSeparator: "",
+    conditionalSeparator: "",
     caseSensitiveProps: false,
 };
 var config = __assign({}, defaultConfig);
+function configure(configUpdate) {
+    Object.assign(config, configUpdate === null ? defaultConfig : configUpdate);
+}
+function configElementSeparator() {
+    var _a, _b;
+    if ((_a = config.elementSeparator) === null || _a === void 0 ? void 0 : _a.length) {
+        return config.elementSeparator;
+    }
+    else if ((_b = config.separator) === null || _b === void 0 ? void 0 : _b.length) {
+        return config.separator;
+    }
+    else {
+        return "-";
+    }
+}
+function configConditionalSeparator() {
+    var _a, _b;
+    if ((_a = config.conditionalSeparator) === null || _a === void 0 ? void 0 : _a.length) {
+        return config.conditionalSeparator;
+    }
+    else if ((_b = config.separator) === null || _b === void 0 ? void 0 : _b.length) {
+        return config.separator + config.separator;
+    }
+    else {
+        return "--";
+    }
+}
 function toStringError() {
     throw new Error("Don't coerce to string directly; use .c or .s (aliases: .cls .str)");
 }
 function nss(nameEnum, elemEnum, condEnum, classMap) {
     var _a;
-    var elemSep = function () { return config.elementSeparator; };
-    var condSep = function () { return config.conditionalSeparator; };
+    var elementSeparator = configElementSeparator();
+    var conditionalSeparator = configConditionalSeparator();
     nameEnum = omitEnumReverseMappings(nameEnum);
     elemEnum = omitEnumReverseMappings(elemEnum);
     condEnum = omitEnumReverseMappings(condEnum);
@@ -37,12 +65,12 @@ function nss(nameEnum, elemEnum, condEnum, classMap) {
     var mapEntries = Object.entries(classMap !== null && classMap !== void 0 ? classMap : []);
     var mappings = new Map(mapEntries);
     var mappingsLowercase = new Map(mapEntries.map(function (_a) {
-        var k = _a[0], v = _a[1];
-        return [k.toLowerCase(), v];
+        var k = _a[0];
+        return [k.toLowerCase(), k];
     }));
     if (baseName) {
         mappings.set(baseName, baseClass !== null && baseClass !== void 0 ? baseClass : null);
-        mappingsLowercase.set(baseName.toLowerCase(), baseClass !== null && baseClass !== void 0 ? baseClass : null);
+        mappingsLowercase.set(baseName.toLowerCase(), baseName);
     }
     function crossPollinate(_a) {
         var name = _a[0], cls = _a[1];
@@ -57,11 +85,11 @@ function nss(nameEnum, elemEnum, condEnum, classMap) {
         }
         else if (typeof cls === "string" && cls.length) {
             mappings.set(name, cls);
-            mappingsLowercase.set(name.toLowerCase(), cls);
+            mappingsLowercase.set(name.toLowerCase(), name);
         }
         else {
             mappings.set(name, null);
-            mappingsLowercase.set(name.toLowerCase(), null);
+            mappingsLowercase.set(name.toLowerCase(), name);
         }
         return [name, cls];
     }
@@ -110,7 +138,7 @@ function nss(nameEnum, elemEnum, condEnum, classMap) {
     var elemClsBuilders = Object.fromEntries(Object.entries(elemEnum !== null && elemEnum !== void 0 ? elemEnum : {}).map(function (_a) {
         var elemName = _a[0], elemClass = _a[1];
         var afterClass = elemClass && elemClass !== elemName ? elemClass : "";
-        var classPrefix = baseName ? baseName + elemSep() : "";
+        var classPrefix = baseName ? baseName + elementSeparator : "";
         function builder() {
             var args = [];
             for (var _i = 0; _i < arguments.length; _i++) {
@@ -122,11 +150,12 @@ function nss(nameEnum, elemEnum, condEnum, classMap) {
                 mappingsLowercase: mappingsLowercase,
                 baseName: elemName,
                 baseClass: classPrefix + elemName,
-                separator: condSep(),
+                separator: conditionalSeparator,
                 afterClass: afterClass,
                 values: args,
                 caseSensitive: true,
                 strictBoolChecks: false,
+                acceptArbitraryStrings: true,
             });
         }
         builder.__nss__ = true;
@@ -146,14 +175,15 @@ function nss(nameEnum, elemEnum, condEnum, classMap) {
                 mappingsLowercase: mappingsLowercase,
                 baseName: elemName,
                 baseClass: classPrefix + elemName,
-                separator: condSep(),
+                separator: conditionalSeparator,
                 afterClass: afterClass,
                 values: args,
                 caseSensitive: config.caseSensitiveProps,
                 strictBoolChecks: true,
+                acceptArbitraryStrings: false,
             });
         };
-        Object.assign(builder, makeCondClassBuilders(builder.c, classPrefix + elemName + condSep()));
+        Object.assign(builder, makeCondClassBuilders(builder.c, classPrefix + elemName + conditionalSeparator));
         // Set en.elem.name:
         Object.defineProperty(builder, "name", {
             value: elemName,
@@ -175,11 +205,12 @@ function nss(nameEnum, elemEnum, condEnum, classMap) {
             mappingsLowercase: mappingsLowercase,
             baseName: baseName !== null && baseName !== void 0 ? baseName : "",
             baseClass: basePriorClass,
-            separator: condSep(),
+            separator: conditionalSeparator,
             afterClass: baseAfterClass,
             values: args,
             caseSensitive: true,
             strictBoolChecks: false,
+            acceptArbitraryStrings: true,
         });
     }
     mainClsBuilder.__nss__ = true;
@@ -198,11 +229,12 @@ function nss(nameEnum, elemEnum, condEnum, classMap) {
             mappingsLowercase: mappingsLowercase,
             baseName: baseName !== null && baseName !== void 0 ? baseName : "",
             baseClass: basePriorClass,
-            separator: condSep(),
+            separator: conditionalSeparator,
             afterClass: baseAfterClass,
             values: args,
             caseSensitive: config.caseSensitiveProps,
             strictBoolChecks: true,
+            acceptArbitraryStrings: false,
         });
     };
     // Set en.name:
@@ -223,7 +255,7 @@ function nss(nameEnum, elemEnum, condEnum, classMap) {
     Object.assign(mainClsBuilder, elemClsBuilders);
     // Set en.condA, en.condB, etc:
     // eg. en.part.s
-    Object.assign(mainClsBuilder, makeCondClassBuilders(mainClsBuilder.c, baseName ? baseName + condSep() : ""));
+    Object.assign(mainClsBuilder, makeCondClassBuilders(mainClsBuilder.c, baseName ? baseName + conditionalSeparator : ""));
     return mainClsBuilder;
 }
 exports.default = nss;
@@ -247,7 +279,7 @@ function resolveNSSArg(builder, arg) {
 }
 exports.resolveNSSArg = resolveNSSArg;
 function constructNSSObject(_a) {
-    var builder = _a.builder, mappings = _a.mappings, mappingsLowercase = _a.mappingsLowercase, baseName = _a.baseName, baseClass = _a.baseClass, separator = _a.separator, afterClass = _a.afterClass, values = _a.values, caseSensitive = _a.caseSensitive, strictBoolChecks = _a.strictBoolChecks;
+    var builder = _a.builder, mappings = _a.mappings, mappingsLowercase = _a.mappingsLowercase, baseName = _a.baseName, baseClass = _a.baseClass, separator = _a.separator, afterClass = _a.afterClass, values = _a.values, caseSensitive = _a.caseSensitive, strictBoolChecks = _a.strictBoolChecks, acceptArbitraryStrings = _a.acceptArbitraryStrings;
     if (!caseSensitive && mappings.size != mappingsLowercase.size) {
         var keys_1 = Array.from(mappings.keys());
         var conflictKeys_1 = [];
@@ -273,6 +305,7 @@ function constructNSSObject(_a) {
             values: values,
             caseSensitive: caseSensitive,
             strictBoolChecks: strictBoolChecks,
+            acceptArbitraryStrings: acceptArbitraryStrings,
         });
         space = str.length && composed.length ? " " : "";
         str += space + composed;
@@ -292,7 +325,7 @@ function constructNSSObject(_a) {
 }
 function composeClass(_a) {
     var _b;
-    var builder = _a.builder, mappings = _a.mappings, mappingsLowercase = _a.mappingsLowercase, prefix = _a.prefix, values = _a.values, caseSensitive = _a.caseSensitive, strictBoolChecks = _a.strictBoolChecks;
+    var builder = _a.builder, mappings = _a.mappings, mappingsLowercase = _a.mappingsLowercase, prefix = _a.prefix, values = _a.values, caseSensitive = _a.caseSensitive, strictBoolChecks = _a.strictBoolChecks, acceptArbitraryStrings = _a.acceptArbitraryStrings;
     var res = "";
     for (var _i = 0, values_1 = values; _i < values_1.length; _i++) {
         var val = values_1[_i];
@@ -328,10 +361,28 @@ function composeClass(_a) {
                     if (on === true || // only recognize boolean values
                         (!strictBoolChecks && on) // unless strictBoolChecks=false
                     ) {
-                        res += " " + prefix + name_1;
-                        var mappedCls = !caseSensitive
-                            ? mappingsLowercase.get(name_1)
-                            : mappings.get(name_1);
+                        //console.log([name, on]);
+                        if (!acceptArbitraryStrings) {
+                            if (caseSensitive) {
+                                if (!mappings.has(name_1)) {
+                                    continue;
+                                }
+                            }
+                            else {
+                                if (!mappingsLowercase.has(name_1.toLowerCase())) {
+                                    continue;
+                                }
+                            }
+                        }
+                        if (caseSensitive) {
+                            res += " " + prefix + name_1;
+                        }
+                        else {
+                            res += " " + prefix + mappingsLowercase.get(name_1.toLowerCase());
+                        }
+                        var mappedCls = caseSensitive
+                            ? mappings.get(name_1)
+                            : mappings.get(mappingsLowercase.get(name_1.toLowerCase()));
                         if ((mappedCls === null || mappedCls === void 0 ? void 0 : mappedCls.length) &&
                             (typeof mappedCls === "string" ||
                                 mappedCls instanceof String)) {
@@ -390,6 +441,5 @@ function extractNameEnumData(nameEnum, classMap) {
     }
     return [baseName, baseClass];
 }
-nss.configure = function (configUpdate) {
-    Object.assign(config, configUpdate === null ? defaultConfig : configUpdate);
-};
+nss.config = config;
+nss.configure = configure;

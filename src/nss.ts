@@ -53,18 +53,44 @@ export type NSSClassMap<NameEnum, ElemEnum, CondEnum> = Partial<
 >;
 
 export type NSSConfig = {
+  separator: string;
   elementSeparator: string;
   conditionalSeparator: string;
   caseSensitiveProps: boolean;
 };
 
 const defaultConfig: NSSConfig = {
-  elementSeparator: "-",
-  conditionalSeparator: "--",
+  separator: "",
+  elementSeparator: "",
+  conditionalSeparator: "",
   caseSensitiveProps: false,
 };
 
 const config = { ...defaultConfig };
+
+function configure(configUpdate: null | Partial<NSSConfig>) {
+  Object.assign(config, configUpdate === null ? defaultConfig : configUpdate);
+}
+
+function configElementSeparator(): string {
+  if (config.elementSeparator?.length) {
+    return config.elementSeparator;
+  } else if (config.separator?.length) {
+    return config.separator;
+  } else {
+    return "-";
+  }
+}
+
+function configConditionalSeparator(): string {
+  if (config.conditionalSeparator?.length) {
+    return config.conditionalSeparator;
+  } else if (config.separator?.length) {
+    return config.separator + config.separator;
+  } else {
+    return "--";
+  }
+}
 
 function toStringError(): string {
   throw new Error(
@@ -87,8 +113,8 @@ export default function nss<
         classMap: NSSClassMap<NameEnum, ElemEnum, CondEnum>
       ) => void | NSSClassMap<NameEnum, ElemEnum, CondEnum>)
 ): NSS<NameEnum, ElemEnum, CondEnum> {
-  const elemSep = () => config.elementSeparator;
-  const condSep = () => config.conditionalSeparator;
+  const elementSeparator = configElementSeparator();
+  const conditionalSeparator = configConditionalSeparator();
 
   nameEnum = omitEnumReverseMappings(nameEnum);
   elemEnum = omitEnumReverseMappings(elemEnum);
@@ -200,7 +226,7 @@ export default function nss<
     Object.entries(elemEnum ?? {}).map(([elemName, elemClass]) => {
       const afterClass =
         elemClass && elemClass !== elemName ? (elemClass as string) : "";
-      const classPrefix = baseName ? baseName + elemSep() : "";
+      const classPrefix = baseName ? baseName + elementSeparator : "";
 
       function builder(...args: NSSArg<CondEnum>[]) {
         return constructNSSObject({
@@ -209,7 +235,7 @@ export default function nss<
           mappingsLowercase,
           baseName: elemName,
           baseClass: classPrefix + elemName,
-          separator: condSep(),
+          separator: conditionalSeparator,
           afterClass,
           values: args,
           caseSensitive: true,
@@ -231,7 +257,7 @@ export default function nss<
           mappingsLowercase,
           baseName: elemName,
           baseClass: classPrefix + elemName,
-          separator: condSep(),
+          separator: conditionalSeparator,
           afterClass,
           values: args,
           caseSensitive: config.caseSensitiveProps,
@@ -242,7 +268,10 @@ export default function nss<
 
       Object.assign(
         builder,
-        makeCondClassBuilders(builder.c, classPrefix + elemName + condSep())
+        makeCondClassBuilders(
+          builder.c,
+          classPrefix + elemName + conditionalSeparator
+        )
       );
 
       // Set en.elem.name:
@@ -266,7 +295,7 @@ export default function nss<
       mappingsLowercase,
       baseName: baseName ?? "",
       baseClass: basePriorClass,
-      separator: condSep(),
+      separator: conditionalSeparator,
       afterClass: baseAfterClass,
       values: args,
       caseSensitive: true,
@@ -287,7 +316,7 @@ export default function nss<
       mappingsLowercase,
       baseName: baseName ?? "",
       baseClass: basePriorClass,
-      separator: condSep(),
+      separator: conditionalSeparator,
       afterClass: baseAfterClass,
       values: args,
       caseSensitive: config.caseSensitiveProps,
@@ -321,7 +350,7 @@ export default function nss<
     mainClsBuilder,
     makeCondClassBuilders(
       mainClsBuilder.c,
-      baseName ? baseName + condSep() : ""
+      baseName ? baseName + conditionalSeparator : ""
     )
   );
 
@@ -559,6 +588,5 @@ function extractNameEnumData<NameEnum, ElemEnum, CondEnum>(
   return [baseName, baseClass];
 }
 
-nss.configure = function (configUpdate: null | Partial<NSSConfig>) {
-  Object.assign(config, configUpdate === null ? defaultConfig : configUpdate);
-};
+nss.config = config;
+nss.configure = configure;

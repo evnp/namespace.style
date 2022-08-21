@@ -33,12 +33,19 @@ export declare type NSSCondFunc = NSSCond & ((on?: unknown) => NSSCond);
 export declare type NSSArg<CondEnum> = NSSElem<CondEnum> | NSSElemFunc<CondEnum> | NSSCond | NSSCondFunc | string[] | Record<string, unknown>;
 export declare type NSSClassMap<NameEnum, ElemEnum, CondEnum> = Partial<Record<keyof NameEnum | keyof ElemEnum | keyof CondEnum, string>>;
 export declare type NSSConfig = {
+    separator: string;
     elementSeparator: string;
     conditionalSeparator: string;
     caseSensitiveProps: boolean;
 };
 declare function nss<NameEnum = object, ElemEnum = object, CondEnum = object>(nameEnum?: null | Record<keyof NameEnum, string | number | boolean>, elemEnum?: null | Record<keyof ElemEnum, string | number | boolean>, condEnum?: null | Record<keyof CondEnum, string | number | boolean>, classMap?: null | NSSClassMap<NameEnum, ElemEnum, CondEnum> | ((classMap: NSSClassMap<NameEnum, ElemEnum, CondEnum>) => void | NSSClassMap<NameEnum, ElemEnum, CondEnum>)): NSS<NameEnum, ElemEnum, CondEnum>;
 declare namespace nss {
+    var config: {
+        separator: string;
+        elementSeparator: string;
+        conditionalSeparator: string;
+        caseSensitiveProps: boolean;
+    };
     var configure: (configUpdate: Partial<NSSConfig> | null) => void;
 }
 export default nss;

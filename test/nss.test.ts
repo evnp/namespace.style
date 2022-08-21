@@ -1541,19 +1541,123 @@ describe("NSS", () => {
     ["enum-based", NameEnumMapped, ElemEnumMapped, CondEnumMapped],
     ["object-based", NameObjMapped, ElemObjMapped, CondObjMapped],
   ])("configuration :: %s", (_, Name, Elem, Cond) => {
-    beforeEach(() => {
-      nss.configure({
-        elementSeparator: "__",
-        conditionalSeparator: ":::",
-      });
-    });
-
     afterEach(() => {
       nss.configure(null);
     });
 
     test("separators", () => {
-      const n = nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond);
+      nss.configure({
+        separator: "_",
+      });
+
+      let n = nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond);
+
+      expect(n.c).toBe("Ship abc");
+      expect(n().c).toBe("Ship abc");
+
+      expect(n.engine.c).toBe("Ship_engine def");
+      expect(n.engine().c).toBe("Ship_engine def");
+
+      expect(n.part.c).toBe("Ship_part ghi");
+      expect(n.part().c).toBe("Ship_part ghi");
+
+      expect(n.warp.c /*-------------*/).toBe("Ship abc Ship__warp jkl");
+      expect(n.warp().c /*-----------*/).toBe("Ship abc Ship__warp jkl");
+      expect(n.warp(true).c /*-------*/).toBe("Ship abc Ship__warp jkl");
+      expect(n.warp(false).c /*------*/).toBe("Ship abc");
+
+      expect(n.part.warp.c /*------*/).toBe(
+        "Ship_part ghi Ship_part__warp jkl"
+      );
+      expect(n.part.warp().c /*------*/).toBe(
+        "Ship_part ghi Ship_part__warp jkl"
+      );
+      expect(n.part.warp(true).c /*--*/).toBe(
+        "Ship_part ghi Ship_part__warp jkl"
+      );
+      expect(n.part.warp(false).c /*-*/).toBe("Ship_part ghi");
+
+      expect(n.Ship.c).toBe("Ship abc");
+      expect(n.Ship().c).toBe("Ship abc");
+
+      expect(n.Ship.engine.c).toBe("Ship_engine def");
+      expect(n.Ship.engine().c).toBe("Ship_engine def");
+
+      expect(n.Ship.part.c).toBe("Ship_part ghi");
+      expect(n.Ship.part().c).toBe("Ship_part ghi");
+
+      expect(n.Ship.warp.c /*-------------*/).toBe("Ship abc Ship__warp jkl");
+      expect(n.Ship.warp().c /*-----------*/).toBe("Ship abc Ship__warp jkl");
+      expect(n.Ship.warp(true).c /*-------*/).toBe("Ship abc Ship__warp jkl");
+      expect(n.Ship.warp(false).c /*------*/).toBe("Ship abc");
+
+      expect(n.Ship.part.warp.c).toBe("Ship_part ghi Ship_part__warp jkl");
+      expect(n.Ship.part.warp().c).toBe("Ship_part ghi Ship_part__warp jkl");
+      expect(n.Ship.part.warp(true).c).toBe(
+        "Ship_part ghi Ship_part__warp jkl"
+      );
+      expect(n.Ship.part.warp(false).c).toBe("Ship_part ghi");
+
+      nss.configure({
+        separator: "..",
+      });
+
+      n = nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond);
+
+      expect(n.c).toBe("Ship abc");
+      expect(n().c).toBe("Ship abc");
+
+      expect(n.engine.c).toBe("Ship..engine def");
+      expect(n.engine().c).toBe("Ship..engine def");
+
+      expect(n.part.c).toBe("Ship..part ghi");
+      expect(n.part().c).toBe("Ship..part ghi");
+
+      expect(n.warp.c /*-------------*/).toBe("Ship abc Ship....warp jkl");
+      expect(n.warp().c /*-----------*/).toBe("Ship abc Ship....warp jkl");
+      expect(n.warp(true).c /*-------*/).toBe("Ship abc Ship....warp jkl");
+      expect(n.warp(false).c /*------*/).toBe("Ship abc");
+
+      expect(n.part.warp.c /*------*/).toBe(
+        "Ship..part ghi Ship..part....warp jkl"
+      );
+      expect(n.part.warp().c /*------*/).toBe(
+        "Ship..part ghi Ship..part....warp jkl"
+      );
+      expect(n.part.warp(true).c /*--*/).toBe(
+        "Ship..part ghi Ship..part....warp jkl"
+      );
+      expect(n.part.warp(false).c /*-*/).toBe("Ship..part ghi");
+
+      expect(n.Ship.c).toBe("Ship abc");
+      expect(n.Ship().c).toBe("Ship abc");
+
+      expect(n.Ship.engine.c).toBe("Ship..engine def");
+      expect(n.Ship.engine().c).toBe("Ship..engine def");
+
+      expect(n.Ship.part.c).toBe("Ship..part ghi");
+      expect(n.Ship.part().c).toBe("Ship..part ghi");
+
+      expect(n.Ship.warp.c /*-------------*/).toBe("Ship abc Ship....warp jkl");
+      expect(n.Ship.warp().c /*-----------*/).toBe("Ship abc Ship....warp jkl");
+      expect(n.Ship.warp(true).c /*-------*/).toBe("Ship abc Ship....warp jkl");
+      expect(n.Ship.warp(false).c /*------*/).toBe("Ship abc");
+
+      expect(n.Ship.part.warp.c).toBe("Ship..part ghi Ship..part....warp jkl");
+      expect(n.Ship.part.warp().c).toBe(
+        "Ship..part ghi Ship..part....warp jkl"
+      );
+      expect(n.Ship.part.warp(true).c).toBe(
+        "Ship..part ghi Ship..part....warp jkl"
+      );
+      expect(n.Ship.part.warp(false).c).toBe("Ship..part ghi");
+
+      nss.configure({
+        elementSeparator: "__",
+        conditionalSeparator: ":::",
+      });
+
+      n = nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond);
 
       expect(n.c).toBe("Ship abc");
       expect(n().c).toBe("Ship abc");
@@ -1603,14 +1707,54 @@ describe("NSS", () => {
     });
 
     test("reset", () => {
-      nss.configure(null); // reset must occur BEFORE nss init
+      nss.configure({
+        separator: "_",
+      });
 
-      const n = nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond);
+      let n = nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond);
+
+      expect(n.warp.c /*-------------*/).toBe("Ship abc Ship__warp jkl");
+      expect(n.warp().c /*-----------*/).toBe("Ship abc Ship__warp jkl");
+      expect(n.part.warp().c).toBe("Ship_part ghi Ship_part__warp jkl");
+      expect(n.part.warp(true).c).toBe("Ship_part ghi Ship_part__warp jkl");
+      expect(n.Ship.part.warp.c).toBe("Ship_part ghi Ship_part__warp jkl");
+      expect(n.Ship.part.warp(false).c).toBe("Ship_part ghi");
+
+      nss.configure(null);
+
+      n = nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond);
 
       expect(n.warp.c /*-------------*/).toBe("Ship abc Ship--warp jkl");
       expect(n.warp().c /*-----------*/).toBe("Ship abc Ship--warp jkl");
-      expect(n.warp("proton torpedo").c).toBe("Ship abc Ship--warp jkl");
-      expect(n.warp(0).c /*----------*/).toBe("Ship abc");
+      expect(n.part.warp().c).toBe("Ship-part ghi Ship-part--warp jkl");
+      expect(n.part.warp(true).c).toBe("Ship-part ghi Ship-part--warp jkl");
+      expect(n.Ship.part.warp.c).toBe("Ship-part ghi Ship-part--warp jkl");
+      expect(n.Ship.part.warp(false).c).toBe("Ship-part ghi");
+
+      nss.configure({
+        elementSeparator: "__",
+        conditionalSeparator: ":::",
+      });
+
+      n = nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond);
+
+      expect(n.warp.c /*-------------*/).toBe("Ship abc Ship:::warp jkl");
+      expect(n.warp().c /*-----------*/).toBe("Ship abc Ship:::warp jkl");
+      expect(n.part.warp().c).toBe("Ship__part ghi Ship__part:::warp jkl");
+      expect(n.part.warp(true).c).toBe("Ship__part ghi Ship__part:::warp jkl");
+      expect(n.Ship.part.warp.c).toBe("Ship__part ghi Ship__part:::warp jkl");
+      expect(n.Ship.part.warp(false).c).toBe("Ship__part ghi");
+
+      nss.configure(null);
+
+      n = nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond);
+
+      expect(n.warp.c /*-------------*/).toBe("Ship abc Ship--warp jkl");
+      expect(n.warp().c /*-----------*/).toBe("Ship abc Ship--warp jkl");
+      expect(n.part.warp().c).toBe("Ship-part ghi Ship-part--warp jkl");
+      expect(n.part.warp(true).c).toBe("Ship-part ghi Ship-part--warp jkl");
+      expect(n.Ship.part.warp.c).toBe("Ship-part ghi Ship-part--warp jkl");
+      expect(n.Ship.part.warp(false).c).toBe("Ship-part ghi");
     });
   });
 });
