@@ -209,7 +209,7 @@ export default function nss<
           builder.cls = builder.c = priorClass + builder.str;
           builder.toString = toStringError;
 
-          // Set en.cond.name:
+          // Set n.cond.name:
           Object.defineProperty(builder, "name", {
             value: condName,
             writable: false,
@@ -274,7 +274,7 @@ export default function nss<
         )
       );
 
-      // Set en.elem.name:
+      // Set n.elem.name:
       Object.defineProperty(builder, "name", {
         value: elemName,
         writable: false,
@@ -325,14 +325,14 @@ export default function nss<
     });
   };
 
-  // Set en.name:
+  // Set n.name:
   Object.defineProperty(mainClsBuilder, "name", {
     value: baseName,
     writable: false,
   });
 
-  // Set en.<baseName>:
-  // eg. en.Ship.s
+  // Set n.<baseName>:
+  // eg. n.Ship.s
   if (baseName) {
     Object.defineProperty(mainClsBuilder, baseName, {
       value: mainClsBuilder,
@@ -340,12 +340,12 @@ export default function nss<
     });
   }
 
-  // Set en.elemA, en.elemB, etc:
-  // eg. en.engine.s
+  // Set n.elemA, n.elemB, etc:
+  // eg. n.engine.s
   Object.assign(mainClsBuilder, elemClsBuilders);
 
-  // Set en.condA, en.condB, etc:
-  // eg. en.part.s
+  // Set n.condA, n.condB, etc:
+  // eg. n.part.s
   Object.assign(
     mainClsBuilder,
     makeCondClassBuilders(
@@ -357,11 +357,11 @@ export default function nss<
   return mainClsBuilder as unknown as NSS<NameEnum, ElemEnum, CondEnum>;
 }
 
-// resolveNSSArg maps basic cond expressions (eg. en.myCond) to their corresponding
-// namespaced cond expressions (eg. en.myElem.myCond) when composing conditionals:
-// en.myElem(en.myCondA, en.myCondB)
+// resolveNSSArg maps basic cond expressions (eg. n.myCond) to their corresponding
+// namespaced cond expressions (eg. n.myElem.myCond) when composing conditionals:
+// n.myElem(n.myCondA, n.myCondB)
 // This obviates the need to supply fully-namespaced conditionals in this case, eg.
-// en.myElem(en.myElem.myCondA, en.myElem.myCondB)
+// n.myElem(n.myElem.myCondA, n.myElem.myCondB)
 export function resolveNSSArg<CondEnum>(
   builder: NSSObject,
   arg: string | NSSArg<CondEnum>
