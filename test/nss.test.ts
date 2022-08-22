@@ -890,12 +890,7 @@ describe("NSS", () => {
   ])(
     "class mapping :: %s",
     (_, Name, Elem, Cond, NameMapped, ElemMapped, CondMapped) => {
-      test("enum values", () => {
-        const n = nss<typeof NameMapped, typeof ElemMapped, typeof CondMapped>(
-          NameMapped,
-          ElemMapped,
-          CondMapped
-        );
+      function verifyBasicForms(n: NSS<typeof Name, typeof Elem, typeof Cond>) {
         expect(n.c).toBe("Ship abc");
         expect(n().c).toBe("Ship abc");
 
@@ -941,15 +936,11 @@ describe("NSS", () => {
           "Ship-part ghi Ship-part--warp jkl"
         );
         expect(n.Ship.part.warp(false).c).toBe("Ship-part ghi");
-      });
+      }
 
-      test("enum values with class composition", () => {
-        const n = nss<typeof NameMapped, typeof ElemMapped, typeof CondMapped>(
-          NameMapped,
-          ElemMapped,
-          CondMapped
-        );
-
+      function verifyCompositionalForms(
+        n: NSS<typeof Name, typeof Elem, typeof Cond>
+      ) {
         expect(n(n.warp, n.adrift).c).toBe(
           "Ship abc Ship--warp jkl Ship--adrift mno"
         );
@@ -1006,139 +997,116 @@ describe("NSS", () => {
         expect(n.part({ warp: false, adrift: false }).c).toBe("Ship-part ghi");
         expect(n.part({ warp: 0, adrift: "at space" }).c).toBe(
           "Ship-part ghi Ship-part--adrift mno"
+        );
+      }
+
+      function verifyChainedForms(
+        n: NSS<typeof Name, typeof Elem, typeof Cond>
+      ) {
+        expect(n.warp().adrift().c).toBe(
+          "Ship abc Ship--warp jkl Ship--adrift mno"
+        );
+        // Equivalent to above (but shouldn't generally be used):
+        expect(n.warp().adrift.c).toBe(
+          "Ship abc Ship--warp jkl Ship--adrift mno"
+        );
+        expect(n.warp(true).adrift(true).c).toBe(
+          "Ship abc Ship--warp jkl Ship--adrift mno"
+        );
+        expect(n.warp(true).adrift(false).c).toBe("Ship abc Ship--warp jkl");
+        expect(n.warp(false).adrift(false).c).toBe("Ship abc");
+        expect(n.warp(0).adrift("at space").c).toBe(
+          "Ship abc Ship--adrift mno"
+        );
+
+        expect(n.part.warp().adrift().c).toBe(
+          "Ship-part ghi Ship-part--warp jkl Ship-part--adrift mno"
+        );
+        // Equivalent to above (but shouldn't generally be used):
+        expect(n.part.warp().adrift.c).toBe(
+          "Ship-part ghi Ship-part--warp jkl Ship-part--adrift mno"
+        );
+        expect(n.part.warp(true).adrift(true).c).toBe(
+          "Ship-part ghi Ship-part--warp jkl Ship-part--adrift mno"
+        );
+        expect(n.part.warp(true).adrift(false).c).toBe(
+          "Ship-part ghi Ship-part--warp jkl"
+        );
+        expect(n.part.warp(false).adrift(false).c).toBe("Ship-part ghi");
+        expect(n.part.warp(0).adrift("at space").c).toBe(
+          "Ship-part ghi Ship-part--adrift mno"
+        );
+      }
+
+      test("enum values", () => {
+        verifyBasicForms(
+          nss<typeof NameMapped, typeof ElemMapped, typeof CondMapped>(
+            NameMapped,
+            ElemMapped,
+            CondMapped
+          )
+        );
+      });
+
+      test("enum values :: class composition", () => {
+        verifyCompositionalForms(
+          nss<typeof NameMapped, typeof ElemMapped, typeof CondMapped>(
+            NameMapped,
+            ElemMapped,
+            CondMapped
+          )
+        );
+      });
+
+      test("enum values :: chained conditionals", () => {
+        verifyChainedForms(
+          nss<typeof NameMapped, typeof ElemMapped, typeof CondMapped>(
+            NameMapped,
+            ElemMapped,
+            CondMapped
+          )
         );
       });
 
       test("map object", () => {
-        const n = nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond, {
-          Ship: "abc",
-          engine: "def",
-          part: "ghi",
-          warp: "jkl",
-          // adrift omitted -- custom classes should be optional
-        });
-
-        expect(n.c).toBe("Ship abc");
-        expect(n().c).toBe("Ship abc");
-
-        expect(n.engine.c).toBe("Ship-engine def");
-        expect(n.engine().c).toBe("Ship-engine def");
-
-        expect(n.part.c).toBe("Ship-part ghi");
-        expect(n.part().c).toBe("Ship-part ghi");
-
-        expect(n.warp.c /*-------------*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.warp().c /*-----------*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.warp(true).c /*-------*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.warp(false).c /*------*/).toBe("Ship abc");
-
-        expect(n.part.warp.c /*--------*/).toBe(
-          "Ship-part ghi Ship-part--warp jkl"
+        verifyBasicForms(
+          nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond, {
+            Ship: "abc",
+            engine: "def",
+            part: "ghi",
+            warp: "jkl",
+            // adrift omitted -- custom classes should be optional
+          })
         );
-        expect(n.part.warp().c /*------*/).toBe(
-          "Ship-part ghi Ship-part--warp jkl"
-        );
-        expect(n.part.warp(true).c /*--*/).toBe(
-          "Ship-part ghi Ship-part--warp jkl"
-        );
-        expect(n.part.warp(false).c /*-*/).toBe("Ship-part ghi");
-
-        expect(n.Ship.c).toBe("Ship abc");
-        expect(n.Ship().c).toBe("Ship abc");
-
-        expect(n.Ship.engine.c).toBe("Ship-engine def");
-        expect(n.Ship.engine().c).toBe("Ship-engine def");
-
-        expect(n.Ship.part.c).toBe("Ship-part ghi");
-        expect(n.Ship.part().c).toBe("Ship-part ghi");
-
-        expect(n.Ship.warp.c /*--------*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.Ship.warp().c /*------*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.Ship.warp(true).c /*--*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.Ship.warp(false).c /*-*/).toBe("Ship abc");
-
-        expect(n.Ship.part.warp.c).toBe("Ship-part ghi Ship-part--warp jkl");
-        expect(n.Ship.part.warp().c).toBe("Ship-part ghi Ship-part--warp jkl");
-        expect(n.Ship.part.warp(true).c).toBe(
-          "Ship-part ghi Ship-part--warp jkl"
-        );
-        expect(n.Ship.part.warp(false).c).toBe("Ship-part ghi");
       });
 
-      test("map object with class composition", () => {
-        const n = nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond, {
-          Ship: "abc",
-          engine: "def",
-          part: "ghi",
-          warp: "jkl",
-          adrift: "mno",
-        });
+      test("map object :: class composition", () => {
+        verifyCompositionalForms(
+          nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond, {
+            Ship: "abc",
+            engine: "def",
+            part: "ghi",
+            warp: "jkl",
+            adrift: "mno",
+          })
+        );
+      });
 
-        expect(n(n.warp, n.adrift).c).toBe(
-          "Ship abc Ship--warp jkl Ship--adrift mno"
-        );
-        expect(n(n.warp(), n.adrift()).c).toBe(
-          "Ship abc Ship--warp jkl Ship--adrift mno"
-        );
-
-        expect(n(n.warp(true), n.adrift(true)).c).toBe(
-          "Ship abc Ship--warp jkl Ship--adrift mno"
-        );
-        expect(n(n.warp(true), n.adrift(false)).c).toBe(
-          "Ship abc Ship--warp jkl"
-        );
-        expect(n(n.warp(false), n.adrift(false)).c).toBe("Ship abc");
-        expect(n(n.warp(0), n.adrift("at space")).c).toBe(
-          "Ship abc Ship--adrift mno"
-        );
-
-        expect(n({ warp: true, adrift: true }).c).toBe(
-          "Ship abc Ship--warp jkl Ship--adrift mno"
-        );
-        expect(n({ warp: true, adrift: false }).c).toBe(
-          "Ship abc Ship--warp jkl"
-        );
-        expect(n({ warp: false, adrift: false }).c).toBe("Ship abc");
-        expect(n({ warp: 0, adrift: "at space" }).c).toBe(
-          "Ship abc Ship--adrift mno"
-        );
-
-        expect(n.part(n.warp, n.adrift).c).toBe(
-          "Ship-part ghi Ship-part--warp jkl Ship-part--adrift mno"
-        );
-        expect(n.part(n.warp(), n.adrift()).c).toBe(
-          "Ship-part ghi Ship-part--warp jkl Ship-part--adrift mno"
-        );
-
-        expect(n.part(n.warp(true), n.adrift(true)).c).toBe(
-          "Ship-part ghi Ship-part--warp jkl Ship-part--adrift mno"
-        );
-        expect(n.part(n.warp(true), n.adrift(false)).c).toBe(
-          "Ship-part ghi Ship-part--warp jkl"
-        );
-        expect(n.part(n.warp(false), n.adrift(false)).c).toBe("Ship-part ghi");
-        expect(n.part(n.warp(0), n.adrift("at space")).c).toBe(
-          "Ship-part ghi Ship-part--adrift mno"
-        );
-
-        expect(n.part({ warp: true, adrift: true }).c).toBe(
-          "Ship-part ghi Ship-part--warp jkl Ship-part--adrift mno"
-        );
-        expect(n.part({ warp: true, adrift: false }).c).toBe(
-          "Ship-part ghi Ship-part--warp jkl"
-        );
-        expect(n.part({ warp: false, adrift: false }).c).toBe("Ship-part ghi");
-        expect(n.part({ warp: 0, adrift: "at space" }).c).toBe(
-          "Ship-part ghi Ship-part--adrift mno"
+      test("map object :: chained conditionals", () => {
+        verifyChainedForms(
+          nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond, {
+            Ship: "abc",
+            engine: "def",
+            part: "ghi",
+            warp: "jkl",
+            adrift: "mno",
+          })
         );
       });
 
       test("generator function", () => {
-        const n = nss<typeof Name, typeof Elem, typeof Cond>(
-          Name,
-          Elem,
-          Cond,
-          () => {
+        verifyBasicForms(
+          nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond, () => {
             const alphabet = "abcdefghijklmnopqrstuvwxyz";
             return {
               Ship: alphabet.slice(0, 3),
@@ -1147,62 +1115,13 @@ describe("NSS", () => {
               warp: alphabet.slice(9, 12),
               // adrift omitted -- custom classes should be optional
             };
-          }
+          })
         );
-
-        expect(n.c).toBe("Ship abc");
-        expect(n().c).toBe("Ship abc");
-
-        expect(n.engine.c).toBe("Ship-engine def");
-        expect(n.engine().c).toBe("Ship-engine def");
-
-        expect(n.part.c).toBe("Ship-part ghi");
-        expect(n.part().c).toBe("Ship-part ghi");
-
-        expect(n.warp.c /*-------------*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.warp().c /*-----------*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.warp(true).c /*-------*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.warp(false).c /*------*/).toBe("Ship abc");
-
-        expect(n.part.warp.c /*--------*/).toBe(
-          "Ship-part ghi Ship-part--warp jkl"
-        );
-        expect(n.part.warp().c /*------*/).toBe(
-          "Ship-part ghi Ship-part--warp jkl"
-        );
-        expect(n.part.warp(true).c /*--*/).toBe(
-          "Ship-part ghi Ship-part--warp jkl"
-        );
-        expect(n.part.warp(false).c /*-*/).toBe("Ship-part ghi");
-
-        expect(n.Ship.c).toBe("Ship abc");
-        expect(n.Ship().c).toBe("Ship abc");
-
-        expect(n.Ship.engine.c).toBe("Ship-engine def");
-        expect(n.Ship.engine().c).toBe("Ship-engine def");
-
-        expect(n.Ship.part.c).toBe("Ship-part ghi");
-        expect(n.Ship.part().c).toBe("Ship-part ghi");
-
-        expect(n.Ship.warp.c /*--------*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.Ship.warp().c /*------*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.Ship.warp(true).c /*--*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.Ship.warp(false).c /*-*/).toBe("Ship abc");
-
-        expect(n.Ship.part.warp.c).toBe("Ship-part ghi Ship-part--warp jkl");
-        expect(n.Ship.part.warp().c).toBe("Ship-part ghi Ship-part--warp jkl");
-        expect(n.Ship.part.warp(true).c).toBe(
-          "Ship-part ghi Ship-part--warp jkl"
-        );
-        expect(n.Ship.part.warp(false).c).toBe("Ship-part ghi");
       });
 
-      test("generator function with class composition", () => {
-        const n = nss<typeof Name, typeof Elem, typeof Cond>(
-          Name,
-          Elem,
-          Cond,
-          () => {
+      test("generator function :: class composition", () => {
+        verifyCompositionalForms(
+          nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond, () => {
             const alphabet = "abcdefghijklmnopqrstuvwxyz";
             return {
               Ship: alphabet.slice(0, 3),
@@ -1211,65 +1130,22 @@ describe("NSS", () => {
               warp: alphabet.slice(9, 12),
               adrift: alphabet.slice(12, 15),
             };
-          }
+          })
         );
+      });
 
-        expect(n(n.warp, n.adrift).c).toBe(
-          "Ship abc Ship--warp jkl Ship--adrift mno"
-        );
-        expect(n(n.warp(), n.adrift()).c).toBe(
-          "Ship abc Ship--warp jkl Ship--adrift mno"
-        );
-
-        expect(n(n.warp(true), n.adrift(true)).c).toBe(
-          "Ship abc Ship--warp jkl Ship--adrift mno"
-        );
-        expect(n(n.warp(true), n.adrift(false)).c).toBe(
-          "Ship abc Ship--warp jkl"
-        );
-        expect(n(n.warp(false), n.adrift(false)).c).toBe("Ship abc");
-        expect(n(n.warp(0), n.adrift("at space")).c).toBe(
-          "Ship abc Ship--adrift mno"
-        );
-
-        expect(n({ warp: true, adrift: true }).c).toBe(
-          "Ship abc Ship--warp jkl Ship--adrift mno"
-        );
-        expect(n({ warp: true, adrift: false }).c).toBe(
-          "Ship abc Ship--warp jkl"
-        );
-        expect(n({ warp: false, adrift: false }).c).toBe("Ship abc");
-        expect(n({ warp: 0, adrift: "at space" }).c).toBe(
-          "Ship abc Ship--adrift mno"
-        );
-
-        expect(n.part(n.warp, n.adrift).c).toBe(
-          "Ship-part ghi Ship-part--warp jkl Ship-part--adrift mno"
-        );
-        expect(n.part(n.warp(), n.adrift()).c).toBe(
-          "Ship-part ghi Ship-part--warp jkl Ship-part--adrift mno"
-        );
-
-        expect(n.part(n.warp(true), n.adrift(true)).c).toBe(
-          "Ship-part ghi Ship-part--warp jkl Ship-part--adrift mno"
-        );
-        expect(n.part(n.warp(true), n.adrift(false)).c).toBe(
-          "Ship-part ghi Ship-part--warp jkl"
-        );
-        expect(n.part(n.warp(false), n.adrift(false)).c).toBe("Ship-part ghi");
-        expect(n.part(n.warp(0), n.adrift("at space")).c).toBe(
-          "Ship-part ghi Ship-part--adrift mno"
-        );
-
-        expect(n.part({ warp: true, adrift: true }).c).toBe(
-          "Ship-part ghi Ship-part--warp jkl Ship-part--adrift mno"
-        );
-        expect(n.part({ warp: true, adrift: false }).c).toBe(
-          "Ship-part ghi Ship-part--warp jkl"
-        );
-        expect(n.part({ warp: false, adrift: false }).c).toBe("Ship-part ghi");
-        expect(n.part({ warp: 0, adrift: "at space" }).c).toBe(
-          "Ship-part ghi Ship-part--adrift mno"
+      test("generator function :: chained conditionals", () => {
+        verifyChainedForms(
+          nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond, () => {
+            const alphabet = "abcdefghijklmnopqrstuvwxyz";
+            return {
+              Ship: alphabet.slice(0, 3),
+              engine: alphabet.slice(3, 6),
+              part: alphabet.slice(6, 9),
+              warp: alphabet.slice(9, 12),
+              adrift: alphabet.slice(12, 15),
+            };
+          })
         );
       });
     }
@@ -1577,6 +1453,19 @@ describe("NSS", () => {
         expect(n.part.warp().s /*------*/).toBe("part--warp jkl");
         expect(n.part.warp(true).s /*--*/).toBe("part--warp jkl");
         expect(n.part.warp(false).s /*-*/).toBe("");
+
+        expect(n.warp(true).adrift().c).toBe("warp jkl adrift mno");
+        expect(n.warp(true).adrift(false).c).toBe("warp jkl");
+        expect(n.adrift().warp("9").adrift(0).c).toBe("adrift mno warp jkl");
+        expect(n.part.warp(true).adrift().c).toBe(
+          "part ghi part--warp jkl part--adrift mno"
+        );
+        expect(n.part.warp(true).adrift(false).c).toBe(
+          "part ghi part--warp jkl"
+        );
+        expect(n.part.adrift().warp("9").adrift(0).c).toBe(
+          "part ghi part--adrift mno part--warp jkl"
+        );
       });
 
       test("omit elements", () => {
@@ -1607,6 +1496,23 @@ describe("NSS", () => {
         expect(n.Ship.warp().s /*--------*/).toBe("Ship--warp jkl");
         expect(n.Ship.adrift(true).s /*--*/).toBe("Ship--adrift mno");
         expect(n.Ship.adrift(false).s /*-*/).toBe("");
+
+        expect(n.warp(true).adrift().c).toBe(
+          "Ship abc Ship--warp jkl Ship--adrift mno"
+        );
+        expect(n.warp(true).adrift(false).c).toBe("Ship abc Ship--warp jkl");
+        expect(n.adrift().warp("9").adrift(0).c).toBe(
+          "Ship abc Ship--adrift mno Ship--warp jkl"
+        );
+        expect(n.Ship.warp(true).adrift().c).toBe(
+          "Ship abc Ship--warp jkl Ship--adrift mno"
+        );
+        expect(n.Ship.warp(true).adrift(false).c).toBe(
+          "Ship abc Ship--warp jkl"
+        );
+        expect(n.Ship.adrift().warp("9").adrift(0).c).toBe(
+          "Ship abc Ship--adrift mno Ship--warp jkl"
+        );
       });
 
       test("omit elements + class mappings via map object", () => {
@@ -1637,6 +1543,23 @@ describe("NSS", () => {
         expect(n.Ship.warp().s /*--------*/).toBe("Ship--warp jkl");
         expect(n.Ship.adrift(true).s /*--*/).toBe("Ship--adrift");
         expect(n.Ship.adrift(false).s /*-*/).toBe("");
+
+        expect(n.warp(true).adrift().c).toBe(
+          "Ship abc Ship--warp jkl Ship--adrift"
+        );
+        expect(n.warp(true).adrift(false).c).toBe("Ship abc Ship--warp jkl");
+        expect(n.adrift().warp("9").adrift(0).c).toBe(
+          "Ship abc Ship--adrift Ship--warp jkl"
+        );
+        expect(n.Ship.warp(true).adrift().c).toBe(
+          "Ship abc Ship--warp jkl Ship--adrift"
+        );
+        expect(n.Ship.warp(true).adrift(false).c).toBe(
+          "Ship abc Ship--warp jkl"
+        );
+        expect(n.Ship.adrift().warp("9").adrift(0).c).toBe(
+          "Ship abc Ship--adrift Ship--warp jkl"
+        );
       });
 
       test("omit conditionals", () => {
@@ -1851,6 +1774,14 @@ describe("NSS", () => {
         "Ship__part ghi Ship__part:::warp jkl"
       );
       expect(n.Ship.part.warp(false).c).toBe("Ship__part ghi");
+
+      expect(n.Ship.part.warp().adrift.c).toBe(
+        "Ship__part ghi Ship__part:::warp jkl Ship__part:::adrift mno"
+      );
+      expect(n.Ship.part.warp(0).adrift("at space").c).toBe(
+        "Ship__part ghi Ship__part:::adrift mno"
+      );
+      expect(n.Ship.part.warp(false).adrift(false).c).toBe("Ship__part ghi");
     });
 
     test("reset", () => {
