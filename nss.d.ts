@@ -17,18 +17,18 @@ export declare type NSSBase<ElemEnum, CondEnum> = {
 } & {
     [key in keyof CondEnum]: NSSCondFunc<CondEnum>;
 } & {
-    props: (...args: NSSArg<CondEnum>[]) => NSSElem<CondEnum>;
+    props: (...args: NSSArg<CondEnum>[]) => NSSObject;
 } & NSSCond;
 export declare type NSSElem<CondEnum> = {
     [key in keyof CondEnum]: NSSCondFunc<CondEnum>;
 } & {
-    props: (...args: NSSArg<CondEnum>[]) => NSSElem<CondEnum>;
+    props: (...args: NSSArg<CondEnum>[]) => NSSObject;
 } & NSSObject;
 export declare type NSSCond = NSSObject & {
     __nssCondOff__?: boolean;
 };
-export declare type NSSBaseFunc<ElemEnum, CondEnum> = NSSBase<ElemEnum, CondEnum> & ((...args: NSSArg<CondEnum>[]) => NSSElem<CondEnum>);
-export declare type NSSElemFunc<CondEnum> = NSSElem<CondEnum> & ((...args: NSSArg<CondEnum>[]) => NSSElem<CondEnum>);
+export declare type NSSBaseFunc<ElemEnum, CondEnum> = NSSBase<ElemEnum, CondEnum> & ((...args: NSSArg<CondEnum>[]) => NSSObject);
+export declare type NSSElemFunc<CondEnum> = NSSElem<CondEnum> & ((...args: NSSArg<CondEnum>[]) => NSSObject);
 export declare type NSSCondFunc<CondEnum> = NSSCond & ((on?: unknown) => NSSCond & NSSElem<CondEnum>);
 export declare type NSSArg<CondEnum> = NSSElem<CondEnum> | NSSElemFunc<CondEnum> | NSSCond | NSSCondFunc<CondEnum> | string[] | Record<string, unknown>;
 export declare type NSSClassMap<NameEnum, ElemEnum, CondEnum> = Partial<Record<keyof NameEnum | keyof ElemEnum | keyof CondEnum, string>>;

@@ -1,3 +1,9 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+// Some test cases require type errors to be ignored;
+// these will employ @ts-ignore on a line-by-line basis
+// and require typescript-eslint's aggressive restriction
+// of these notations to be ignored ("ban-ts-comment").
+
 import nss, { NSS, NSSArg } from "../src/nss";
 
 enum NameEnum {
@@ -572,7 +578,6 @@ describe("NSS", () => {
       expect(n(n.warp(true), n.adrift(false)).s).toBe("Ship--warp");
       expect(n(n.warp(false), n.adrift(false)).s).toBe("");
       expect(n(n.warp(0), n.adrift("at space")).s).toBe("Ship--adrift");
-      // all non-bool values ignored unless config.strictBoolChecks=false
 
       // Should throw: NSS expressions should never be cast directly to string.
       expect(() => `${n(n.warp(true), n.adrift(true))}`).toThrow();
@@ -587,14 +592,12 @@ describe("NSS", () => {
       expect(n({ warp: true, adrift: false }).c).toBe("Ship Ship--warp");
       expect(n({ warp: false, adrift: false }).c).toBe("Ship");
       expect(n({ warp: 0, adrift: "at space" }).c).toBe("Ship Ship--adrift");
-      // all non-bool values ignored unless config.strictBoolChecks=false
 
       // Equivalent to above (object composition):
       expect(n({ warp: true, adrift: true }).s).toBe("Ship--warp Ship--adrift");
       expect(n({ warp: true, adrift: false }).s).toBe("Ship--warp");
       expect(n({ warp: false, adrift: false }).s).toBe("");
       expect(n({ warp: 0, adrift: "at space" }).s).toBe("Ship--adrift");
-      // all non-bool values ignored unless config.strictBoolChecks=false
 
       // Should throw: NSS expressions should never be cast directly to string.
       expect(() => `${n({ warp: true, adrift: true })}`).toThrow();
@@ -659,7 +662,6 @@ describe("NSS", () => {
       expect(n.part(n.warp(0), n.adrift("at space")).c).toBe(
         "Ship-part Ship-part--adrift"
       );
-      // all non-bool values ignored unless config.strictBoolChecks=false
 
       expect(n.part(n.warp(true), n.adrift(true)).s).toBe(
         "Ship-part--warp Ship-part--adrift"
@@ -669,7 +671,6 @@ describe("NSS", () => {
       expect(n.part(n.warp(0), n.adrift("at space")).s).toBe(
         "Ship-part--adrift"
       );
-      // all non-bool values ignored unless config.strictBoolChecks=false
 
       // Should throw: NSS expressions should never be cast directly to string.
       expect(() => `${n.part(n.warp(true), n.adrift(true))}`).toThrow();
@@ -688,7 +689,6 @@ describe("NSS", () => {
       expect(n.part({ warp: 0, adrift: "at space" }).c).toBe(
         "Ship-part Ship-part--adrift"
       );
-      // all non-bool values ignored unless config.strictBoolChecks=false
 
       // Equivalent to above (object composition):
       expect(n.part({ warp: true, adrift: true }).s).toBe(
@@ -699,13 +699,172 @@ describe("NSS", () => {
       expect(n.part({ warp: 0, adrift: "at space" }).s).toBe(
         "Ship-part--adrift"
       );
-      // all non-bool values ignored unless config.strictBoolChecks=false
 
       // Should throw: NSS expressions should never be cast directly to string.
       expect(() => `${n.part({ warp: true, adrift: true })}`).toThrow();
       expect(() => `${n.part({ warp: true, adrift: false })}`).toThrow();
       expect(() => `${n.part({ warp: false, adrift: false })}`).toThrow();
       expect(() => `${n.part({ warp: 0, adrift: "at space" })}`).toThrow();
+    });
+
+    test("chained conditionals :: base class", () => {
+      expect(n.warp().adrift().c).toBe("Ship Ship--warp Ship--adrift");
+      expect(n.warp().adrift().s).toBe("Ship--adrift");
+
+      // Equivalent to above (but shouldn't generally be used):
+      expect(n.warp().adrift.c).toBe("Ship Ship--warp Ship--adrift");
+      expect(n.warp().adrift.s).toBe("Ship--adrift");
+
+      expect(n.warp(true).adrift(true).c).toBe("Ship Ship--warp Ship--adrift");
+      expect(n.warp(true).adrift(false).c).toBe("Ship Ship--warp");
+      expect(n.warp(false).adrift(false).c).toBe("Ship");
+      expect(n.warp(0).adrift("at space").c).toBe("Ship Ship--adrift");
+
+      expect(n.warp(true).adrift(true).s).toBe("Ship--adrift");
+      expect(n.warp(true).adrift(false).s).toBe("");
+      expect(n.warp(false).adrift(false).s).toBe("");
+      expect(n.warp(0).adrift("at space").s).toBe("Ship--adrift");
+
+      // Triple chain: false cond does not negate true cond
+      // TODO Consider fixing this in the future
+      expect(n.warp(true).adrift(true).warp(false).c).toBe(
+        "Ship Ship--warp Ship--adrift"
+      );
+      expect(n.warp(true).adrift(true).warp(false).s).toBe("");
+      // Triple chain: duplicate cond results in duplicate class
+      // TODO Consider fixing this in the future
+      expect(n.warp(true).adrift(true).warp(true).c).toBe(
+        "Ship Ship--warp Ship--adrift Ship--warp"
+      );
+      expect(n.warp(true).adrift(true).warp(true).s).toBe("Ship--warp");
+
+      // Should throw: NSS expressions should never be cast directly to string.
+      expect(() => `${n.warp(true).adrift(true)}`).toThrow();
+      expect(() => `${n.warp(true).adrift(false)}`).toThrow();
+      expect(() => `${n.warp(false).adrift(false)}`).toThrow();
+      expect(() => `${n.warp(0).adrift("at space")}`).toThrow();
+      // Should throw: Chaining should only be available off top-level n object, not n():
+      // TODO Consider fixing this in the future
+      // @ts-ignore
+      expect(() => n().warp(true).adrift(true)).toThrow();
+      // @ts-ignore
+      expect(() => n().warp(true).adrift(false)).toThrow();
+      // @ts-ignore
+      expect(() => n().warp(false).adrift(false)).toThrow();
+      // @ts-ignore
+      expect(() => n().warp(0).adrift("at space")).toThrow();
+      // Should throw: Chaining should only be available off top-level n object:
+      // TODO Consider fixing this in the future
+      // @ts-ignore
+      expect(() => n({ warp: true }).warp(true).adrift(true)).toThrow();
+      // @ts-ignore
+      expect(() => n({ warp: true }).warp(true).adrift(false)).toThrow();
+      // @ts-ignore
+      expect(() => n({ warp: true }).warp(false).adrift(false)).toThrow();
+      // @ts-ignore
+      expect(() => n({ warp: true }).warp(0).adrift("at space")).toThrow();
+      // Should throw: Chaining should only be available off top-level n object:
+      // TODO Consider fixing this in the future
+      // @ts-ignore
+      expect(() => n.props({ warp: true }).warp(true).adrift(true)).toThrow();
+      // @ts-ignore
+      expect(() => n.props({ warp: true }).warp(true).adrift(false)).toThrow();
+      // @ts-ignore
+      expect(() => n.props({ warp: true }).warp(false).adrift(false)).toThrow();
+      // @ts-ignore
+      expect(() => n.props({ warp: true }).warp(0).adrift("space")).toThrow();
+    });
+
+    test("chained conditionals :: element class", () => {
+      expect(n.part.warp().adrift().c).toBe(
+        "Ship-part Ship-part--warp Ship-part--adrift"
+      );
+      expect(n.part.warp().adrift().s).toBe("Ship-part--adrift");
+
+      // Equivalent to above (but shouldn't generally be used):
+      expect(n.part.warp().adrift.c).toBe(
+        "Ship-part Ship-part--warp Ship-part--adrift"
+      );
+      expect(n.part.warp().adrift.s).toBe("Ship-part--adrift");
+
+      expect(n.part.warp(true).adrift(true).c).toBe(
+        "Ship-part Ship-part--warp Ship-part--adrift"
+      );
+      expect(n.part.warp(true).adrift(false).c).toBe(
+        "Ship-part Ship-part--warp"
+      );
+      expect(n.part.warp(false).adrift(false).c).toBe("Ship-part");
+      expect(n.part.warp(0).adrift("at space").c).toBe(
+        "Ship-part Ship-part--adrift"
+      );
+
+      expect(n.part.warp(true).adrift(true).s).toBe("Ship-part--adrift");
+      expect(n.part.warp(true).adrift(false).s).toBe("");
+      expect(n.part.warp(false).adrift(false).s).toBe("");
+      expect(n.part.warp(0).adrift("at space").s).toBe("Ship-part--adrift");
+
+      // Triple chain: false cond does not negate true cond
+      // TODO Consider fixing this in the future
+      expect(n.part.warp(true).adrift(true).warp(false).c).toBe(
+        "Ship-part Ship-part--warp Ship-part--adrift"
+      );
+      expect(n.part.warp(true).adrift(true).warp(false).s).toBe("");
+      // Triple chain: duplicate cond results in duplicate class
+      // TODO Consider fixing this in the future
+      expect(n.part.warp(true).adrift(true).warp(true).c).toBe(
+        "Ship-part Ship-part--warp Ship-part--adrift Ship-part--warp"
+      );
+      expect(n.part.warp(true).adrift(true).warp(true).s).toBe(
+        "Ship-part--warp"
+      );
+
+      // Should throw: NSS expressions should never be cast directly to string.
+      // @ts-ignore
+      expect(() => `${n.part.warp(true).adrift(true)}`).toThrow();
+      // @ts-ignore
+      expect(() => `${n.part.warp(true).adrift(false)}`).toThrow();
+      // @ts-ignore
+      expect(() => `${n.part.warp(false).adrift(false)}`).toThrow();
+      // @ts-ignore
+      expect(() => `${n.part.warp(0).adrift("at space")}`).toThrow();
+      // Should throw: Chaining should only be available off top-level n object, not n():
+      // TODO Consider fixing this in the future
+      // @ts-ignore
+      expect(() => n.part().warp(true).adrift(true)).toThrow();
+      // @ts-ignore
+      expect(() => n.part().warp(true).adrift(false)).toThrow();
+      // @ts-ignore
+      expect(() => n.part().warp(false).adrift(false)).toThrow();
+      // @ts-ignore
+      expect(() => n.part().warp(0).adrift("at space")).toThrow();
+      // Should throw: Chaining should only be available off top-level n object:
+      // TODO Consider fixing this in the future
+      // @ts-ignore
+      expect(() => n.part({ warp: true }).warp(true).adrift(true)).toThrow();
+      // @ts-ignore
+      expect(() => n.part({ warp: true }).warp(true).adrift(false)).toThrow();
+      // @ts-ignore
+      expect(() => n.part({ warp: true }).warp(false).adrift(false)).toThrow();
+      // @ts-ignore
+      expect(() => n.part({ warp: true }).warp(0).adrift("at space")).toThrow();
+      // Should throw: Chaining should only be available off top-level n object:
+      // TODO Consider fixing this in the future
+      expect(() =>
+        // @ts-ignore
+        n.part.props({ warp: true }).warp(true).adrift(true)
+      ).toThrow();
+      expect(() =>
+        // @ts-ignore
+        n.part.props({ warp: true }).warp(true).adrift(false)
+      ).toThrow();
+      expect(() =>
+        // @ts-ignore
+        n.part.props({ warp: true }).warp(false).adrift(false)
+      ).toThrow();
+      expect(() =>
+        // @ts-ignore
+        n.part.props({ warp: true }).warp(0).adrift("space")
+      ).toThrow();
     });
   });
 
@@ -808,7 +967,6 @@ describe("NSS", () => {
         expect(n(n.warp(0), n.adrift("at space")).c).toBe(
           "Ship abc Ship--adrift mno"
         );
-        // all non-bool values ignored unless config.strictBoolChecks=false
 
         expect(n({ warp: true, adrift: true }).c).toBe(
           "Ship abc Ship--warp jkl Ship--adrift mno"
@@ -820,7 +978,6 @@ describe("NSS", () => {
         expect(n({ warp: 0, adrift: "at space" }).c).toBe(
           "Ship abc Ship--adrift mno"
         );
-        // all non-bool values ignored unless config.strictBoolChecks=false
 
         expect(n.part(n.warp, n.adrift).c).toBe(
           "Ship-part ghi Ship-part--warp jkl Ship-part--adrift mno"
@@ -839,7 +996,6 @@ describe("NSS", () => {
         expect(n.part(n.warp(0), n.adrift("at space")).c).toBe(
           "Ship-part ghi Ship-part--adrift mno"
         );
-        // all non-bool values ignored unless config.strictBoolChecks=false
 
         expect(n.part({ warp: true, adrift: true }).c).toBe(
           "Ship-part ghi Ship-part--warp jkl Ship-part--adrift mno"
@@ -851,7 +1007,6 @@ describe("NSS", () => {
         expect(n.part({ warp: 0, adrift: "at space" }).c).toBe(
           "Ship-part ghi Ship-part--adrift mno"
         );
-        // all non-bool values ignored unless config.strictBoolChecks=false
       });
 
       test("map object", () => {
@@ -936,7 +1091,6 @@ describe("NSS", () => {
         expect(n(n.warp(0), n.adrift("at space")).c).toBe(
           "Ship abc Ship--adrift mno"
         );
-        // all non-bool values ignored unless config.strictBoolChecks=false
 
         expect(n({ warp: true, adrift: true }).c).toBe(
           "Ship abc Ship--warp jkl Ship--adrift mno"
@@ -948,7 +1102,6 @@ describe("NSS", () => {
         expect(n({ warp: 0, adrift: "at space" }).c).toBe(
           "Ship abc Ship--adrift mno"
         );
-        // all non-bool values ignored unless config.strictBoolChecks=false
 
         expect(n.part(n.warp, n.adrift).c).toBe(
           "Ship-part ghi Ship-part--warp jkl Ship-part--adrift mno"
@@ -967,7 +1120,6 @@ describe("NSS", () => {
         expect(n.part(n.warp(0), n.adrift("at space")).c).toBe(
           "Ship-part ghi Ship-part--adrift mno"
         );
-        // all non-bool values ignored unless config.strictBoolChecks=false
 
         expect(n.part({ warp: true, adrift: true }).c).toBe(
           "Ship-part ghi Ship-part--warp jkl Ship-part--adrift mno"
@@ -979,7 +1131,6 @@ describe("NSS", () => {
         expect(n.part({ warp: 0, adrift: "at space" }).c).toBe(
           "Ship-part ghi Ship-part--adrift mno"
         );
-        // all non-bool values ignored unless config.strictBoolChecks=false
       });
 
       test("generator function", () => {
@@ -1080,7 +1231,6 @@ describe("NSS", () => {
         expect(n(n.warp(0), n.adrift("at space")).c).toBe(
           "Ship abc Ship--adrift mno"
         );
-        // all non-bool values ignored unless config.strictBoolChecks=false
 
         expect(n({ warp: true, adrift: true }).c).toBe(
           "Ship abc Ship--warp jkl Ship--adrift mno"
@@ -1092,7 +1242,6 @@ describe("NSS", () => {
         expect(n({ warp: 0, adrift: "at space" }).c).toBe(
           "Ship abc Ship--adrift mno"
         );
-        // all non-bool values ignored unless config.strictBoolChecks=false
 
         expect(n.part(n.warp, n.adrift).c).toBe(
           "Ship-part ghi Ship-part--warp jkl Ship-part--adrift mno"
@@ -1111,7 +1260,6 @@ describe("NSS", () => {
         expect(n.part(n.warp(0), n.adrift("at space")).c).toBe(
           "Ship-part ghi Ship-part--adrift mno"
         );
-        // all non-bool values ignored unless config.strictBoolChecks=false
 
         expect(n.part({ warp: true, adrift: true }).c).toBe(
           "Ship-part ghi Ship-part--warp jkl Ship-part--adrift mno"
@@ -1123,7 +1271,6 @@ describe("NSS", () => {
         expect(n.part({ warp: 0, adrift: "at space" }).c).toBe(
           "Ship-part ghi Ship-part--adrift mno"
         );
-        // all non-bool values ignored unless config.strictBoolChecks=false
       });
     }
   );
