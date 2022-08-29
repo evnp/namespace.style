@@ -1,59 +1,58 @@
-export type NSS<NameEnum, ElemEnum, CondEnum> = {
-  [key in keyof NameEnum]: NSSBaseFunc<ElemEnum, CondEnum>;
+export type NSS<Base, Elem, Cond> = {
+  [key in keyof Base]: NSSBaseFunc<Base, Elem, Cond>;
 } & {
-  mapClasses: () => NSS<NameEnum, ElemEnum, CondEnum>;
-} & NSSBaseFunc<ElemEnum, CondEnum>;
+  mapClasses: () => NSS<Base, Elem, Cond>;
+} & NSSBaseFunc<Base, Elem, Cond>;
 
-// eslint-disable-next-line
-export type NSSObject<CondEnum> = {
-  __nss__: boolean;
-  name: string;
+export type NSSObject<Base, Elem, Cond> = {
   cls: string;
   c: string; // alias
-  //base: string; // TODO base, elem, cond accessors
-  //elem: string;
-  //cond: (key?: CondEnum) => string;
+  name: string;
+  value: string;
+  base: NSSObject<Base, Elem, Cond>;
+  elem: NSSObject<Base, Elem, Cond> | null;
+  //cond: (key?: Cond) => NSSCond<Base, Elem, Cond>; // TODO
   mapped: string | null;
   toString: () => string;
 };
 
-export type NSSBase<ElemEnum, CondEnum> = {
-  [key in keyof ElemEnum]: NSSElemFunc<CondEnum>;
+export type NSSBase<Base, Elem, Cond> = {
+  [key in keyof Elem]: NSSElemFunc<Base, Elem, Cond>;
 } & {
-  [key in keyof CondEnum]: NSSCondFunc<CondEnum>;
+  [key in keyof Cond]: NSSCondFunc<Base, Elem, Cond>;
 } & {
-  props: (...args: NSSArg<CondEnum>[]) => NSSObject<CondEnum>;
-} & NSSCond<CondEnum>;
+  props: (...args: NSSArg<Base, Elem, Cond>[]) => NSSObject<Base, Elem, Cond>;
+} & NSSCond<Base, Elem, Cond>;
 
-export type NSSElem<CondEnum> = {
-  [key in keyof CondEnum]: NSSCondFunc<CondEnum>;
+export type NSSElem<Base, Elem, Cond> = {
+  [key in keyof Cond]: NSSCondFunc<Base, Elem, Cond>;
 } & {
-  props: (...args: NSSArg<CondEnum>[]) => NSSObject<CondEnum>;
-} & NSSObject<CondEnum>;
+  props: (...args: NSSArg<Base, Elem, Cond>[]) => NSSObject<Base, Elem, Cond>;
+} & NSSObject<Base, Elem, Cond>;
 
-export type NSSCond<CondEnum> = NSSObject<CondEnum> & {
-  __nssCondOff__?: boolean;
+export type NSSCond<Base, Elem, Cond> = NSSObject<Base, Elem, Cond> & {
+  off: boolean;
 };
 
-export type NSSBaseFunc<ElemEnum, CondEnum> = NSSBase<ElemEnum, CondEnum> &
-  ((...args: NSSArg<CondEnum>[]) => NSSObject<CondEnum>);
+export type NSSBaseFunc<Base, Elem, Cond> = NSSBase<Base, Elem, Cond> &
+  ((...args: NSSArg<Base, Elem, Cond>[]) => NSSObject<Base, Elem, Cond>);
 
-export type NSSElemFunc<CondEnum> = NSSElem<CondEnum> &
-  ((...args: NSSArg<CondEnum>[]) => NSSObject<CondEnum>);
+export type NSSElemFunc<Base, Elem, Cond> = NSSElem<Base, Elem, Cond> &
+  ((...args: NSSArg<Base, Elem, Cond>[]) => NSSObject<Base, Elem, Cond>);
 
-export type NSSCondFunc<CondEnum> = NSSCond<CondEnum> &
-  ((on?: unknown) => NSSCond<CondEnum> & NSSElem<CondEnum>);
+export type NSSCondFunc<Base, Elem, Cond> = NSSCond<Base, Elem, Cond> &
+  ((on?: unknown) => NSSCond<Base, Elem, Cond> & NSSElem<Base, Elem, Cond>);
 
-export type NSSArg<CondEnum> =
-  | NSSElem<CondEnum>
-  | NSSElemFunc<CondEnum>
-  | NSSCond<CondEnum>
-  | NSSCondFunc<CondEnum>
+export type NSSArg<Base, Elem, Cond> =
+  | NSSElem<Base, Elem, Cond>
+  | NSSElemFunc<Base, Elem, Cond>
+  | NSSCond<Base, Elem, Cond>
+  | NSSCondFunc<Base, Elem, Cond>
   | string[]
   | Record<string, unknown>;
 
-export type NSSClassMap<NameEnum, ElemEnum, CondEnum> = Partial<
-  Record<keyof NameEnum | keyof ElemEnum | keyof CondEnum, string>
+export type NSSClassMap<Base, Elem, Cond> = Partial<
+  Record<keyof Base | keyof Elem | keyof Cond, string>
 >;
 
 export type NSSConfig = {
@@ -100,38 +99,33 @@ function toStringError(): string {
   throw new Error("Don't coerce to string directly; use .c (alias: .cls)");
 }
 
-export default function nss<
-  NameEnum = object,
-  ElemEnum = object,
-  CondEnum = object
->(
-  nameEnum?: null | Record<keyof NameEnum, string | number | boolean>,
-  elemEnum?: null | Record<keyof ElemEnum, string | number | boolean>,
-  condEnum?: null | Record<keyof CondEnum, string | number | boolean>,
+export default function nss<Base = object, Elem = object, Cond = object>(
+  name?: null | Record<keyof Base, string | number | boolean>,
+  elem?: null | Record<keyof Elem, string | number | boolean>,
+  cond?: null | Record<keyof Cond, string | number | boolean>,
   classMap?:
     | null
-    | NSSClassMap<NameEnum, ElemEnum, CondEnum>
+    | NSSClassMap<Base, Elem, Cond>
     | ((
-        classMap: NSSClassMap<NameEnum, ElemEnum, CondEnum>
-      ) => void | NSSClassMap<NameEnum, ElemEnum, CondEnum>)
-): NSS<NameEnum, ElemEnum, CondEnum> {
+        classMap: NSSClassMap<Base, Elem, Cond>
+      ) => void | NSSClassMap<Base, Elem, Cond>)
+): NSS<Base, Elem, Cond> {
   const elementSeparator = configElementSeparator();
   const conditionalSeparator = configConditionalSeparator();
 
-  nameEnum = omitEnumReverseMappings(nameEnum);
-  elemEnum = omitEnumReverseMappings(elemEnum);
-  condEnum = omitEnumReverseMappings(condEnum);
+  name = omitEnumReverseMappings(name);
+  elem = omitEnumReverseMappings(elem);
+  cond = omitEnumReverseMappings(cond);
 
   if (typeof classMap === "function") {
     const classMapRet = {};
     classMap = classMap(classMapRet) ?? classMapRet;
   }
 
-  const [baseName, baseClass] = extractNameEnumData<
-    NameEnum,
-    ElemEnum,
-    CondEnum
-  >(nameEnum, classMap);
+  const [baseName, baseClass] = extractBaseData<Base, Elem, Cond>(
+    name,
+    classMap
+  );
 
   // Cross-pollinate class mappings between enums and auxilliary mapping object:
   const mapEntries = Object.entries(classMap ?? []);
@@ -160,16 +154,21 @@ export default function nss<
     }
     return [name, cls];
   }
-  elemEnum = Object.fromEntries(
-    Object.entries(elemEnum ?? {}).map(crossPollinate)
-  ) as typeof elemEnum;
-  condEnum = Object.fromEntries(
-    Object.entries(condEnum ?? {}).map(crossPollinate)
-  ) as typeof condEnum;
+  elem = Object.fromEntries(
+    Object.entries(elem ?? {}).map(crossPollinate)
+  ) as typeof elem;
+  cond = Object.fromEntries(
+    Object.entries(cond ?? {}).map(crossPollinate)
+  ) as typeof cond;
 
-  function buildCondObjects(classPrelude: string, classPrefix: string) {
+  function buildCondObjects(
+    classPrelude: string,
+    classPrefix: string,
+    nssBaseObject: NSSObject<Base, Elem, Cond>,
+    nssElemObject: NSSObject<Base, Elem, Cond> | null = null
+  ) {
     return Object.fromEntries(
-      Object.entries(condEnum ?? {}).map(([condName, condClass]) => {
+      Object.entries(cond ?? {}).map(([condName, condClass]) => {
         const classPrelude_ = classPrelude?.length ? classPrelude + " " : "";
         const afterClass =
           condClass && condClass !== condName ? " " + condClass : "";
@@ -179,32 +178,40 @@ export default function nss<
           //       so that arguments.length can be correctly inspected;
           //       allows distinction between myCls() and myCls(undefined) calls
           let cls: string;
-          let __nssCondOff__;
+          let off;
           if (!arguments.length || on) {
-            __nssCondOff__ = false;
+            off = false;
             cls = classPrelude_ + classPrefix + condName + afterClass;
           } else {
-            __nssCondOff__ = true;
+            off = true;
             cls = classPrelude;
           }
           const nssObject = {
-            __nss__: true,
-            ...(__nssCondOff__ ? { __nssCondOff__: true } : {}),
-            name: condName,
+            off,
             cls,
             c: cls, // alias
+            name: condName,
+            value: classPrefix + condName,
             mapped: afterClass.length ? afterClass : null,
             toString: toStringError,
+            base: nssBaseObject,
+            elem: nssElemObject,
           };
-          Object.assign(nssObject, buildCondObjects(cls, classPrefix));
+          Object.assign(
+            nssObject,
+            buildCondObjects(cls, classPrefix, nssBaseObject, nssElemObject)
+          );
           return nssObject;
         }
 
-        nssCondObject.__nss__ = true;
+        nssCondObject.off = false;
         nssCondObject.cls = classPrelude_ + classPrefix + condName + afterClass;
         nssCondObject.c = nssCondObject.cls; // alias
+        nssCondObject.value = classPrefix + condName;
         nssCondObject.mapped = afterClass.length ? afterClass : null;
         nssCondObject.toString = toStringError;
+        nssCondObject.base = nssBaseObject;
+        nssCondObject.elem = nssElemObject;
 
         // Set n.cond.name:
         Object.defineProperty(nssCondObject, "name", {
@@ -218,14 +225,16 @@ export default function nss<
   }
 
   const nssElemObjects = Object.fromEntries(
-    Object.entries(elemEnum ?? {}).map(([elemName, elemClass]) => {
+    Object.entries(elem ?? {}).map(([elemName, elemClass]) => {
       const afterClass =
         elemClass && elemClass !== elemName ? (elemClass as string) : "";
       const classPrefix = baseName ? baseName + elementSeparator : "";
 
-      function nssElemObject(...args: NSSArg<CondEnum>[]) {
+      function nssElemObject(...args: NSSArg<Base, Elem, Cond>[]) {
         return constructNSSObject({
-          parent: nssElemObject,
+          base: nssBaseObject as unknown as NSSBaseFunc<Base, Elem, Cond>,
+          elem: nssElemObject as unknown as NSSElemFunc<Base, Elem, Cond>,
+          parent: nssElemObject as unknown as NSSObject<Base, Elem, Cond>,
           mappings,
           mappingsLowercase,
           baseName: elemName,
@@ -239,16 +248,18 @@ export default function nss<
         });
       }
 
-      nssElemObject.__nss__ = true;
       const prefix = classPrefix + elemName;
       const space = prefix.length && afterClass.length ? " " : "";
       nssElemObject.cls = prefix + space + afterClass;
       nssElemObject.c = nssElemObject.cls; // alias
+      nssElemObject.value = nssElemObject.cls;
       nssElemObject.mapped = afterClass.length ? afterClass : null;
       nssElemObject.toString = toStringError;
-      nssElemObject.props = function (...args: NSSArg<CondEnum>[]) {
+      nssElemObject.props = function (...args: NSSArg<Base, Elem, Cond>[]) {
         return constructNSSObject({
-          parent: nssElemObject,
+          base: nssBaseObject as unknown as NSSBaseFunc<Base, Elem, Cond>,
+          elem: nssElemObject as unknown as NSSElemFunc<Base, Elem, Cond>,
+          parent: nssElemObject as unknown as NSSObject<Base, Elem, Cond>,
           mappings,
           mappingsLowercase,
           baseName: elemName,
@@ -266,7 +277,9 @@ export default function nss<
         nssElemObject,
         buildCondObjects(
           nssElemObject.c,
-          classPrefix + elemName + conditionalSeparator
+          classPrefix + elemName + conditionalSeparator,
+          nssBaseObject as unknown as NSSObject<Base, Elem, Cond>,
+          nssElemObject as unknown as NSSObject<Base, Elem, Cond>
         )
       );
 
@@ -284,9 +297,11 @@ export default function nss<
   const baseAfterClass = baseClass ?? "";
 
   // Create top-level NSS object (en):
-  function nssMainObject(...args: NSSArg<CondEnum>[]) {
+  function nssBaseObject(...args: NSSArg<Base, Elem, Cond>[]) {
     return constructNSSObject({
-      parent: nssMainObject,
+      base: nssBaseObject as unknown as NSSBaseFunc<Base, Elem, Cond>,
+      elem: null,
+      parent: nssBaseObject as unknown as NSSObject<Base, Elem, Cond>,
       mappings,
       mappingsLowercase,
       baseName: baseName ?? "",
@@ -300,15 +315,17 @@ export default function nss<
     });
   }
 
-  nssMainObject.__nss__ = true;
-  nssMainObject.cls =
+  nssBaseObject.cls =
     basePriorClass + (baseName && baseClass ? " " : "") + baseAfterClass;
-  nssMainObject.c = nssMainObject.cls; // alias
-  nssMainObject.mapped = baseAfterClass.length ? baseAfterClass : null;
-  nssMainObject.toString = toStringError;
-  nssMainObject.props = function (...args: NSSArg<CondEnum>[]) {
+  nssBaseObject.c = nssBaseObject.cls; // alias
+  nssBaseObject.value = nssBaseObject.cls;
+  nssBaseObject.mapped = baseAfterClass.length ? baseAfterClass : null;
+  nssBaseObject.toString = toStringError;
+  nssBaseObject.props = function (...args: NSSArg<Base, Elem, Cond>[]) {
     return constructNSSObject({
-      parent: nssMainObject,
+      base: nssBaseObject as unknown as NSSBaseFunc<Base, Elem, Cond>,
+      elem: null,
+      parent: nssBaseObject as unknown as NSSObject<Base, Elem, Cond>,
       mappings,
       mappingsLowercase,
       baseName: baseName ?? "",
@@ -323,7 +340,7 @@ export default function nss<
   };
 
   // Set n.name:
-  Object.defineProperty(nssMainObject, "name", {
+  Object.defineProperty(nssBaseObject, "name", {
     value: baseName,
     writable: false,
   });
@@ -331,27 +348,28 @@ export default function nss<
   // Set n.<baseName>:
   // eg. n.Ship.s
   if (baseName) {
-    Object.defineProperty(nssMainObject, baseName, {
-      value: nssMainObject,
+    Object.defineProperty(nssBaseObject, baseName, {
+      value: nssBaseObject,
       writable: false,
     });
   }
 
   // Set n.elemA, n.elemB, etc:
   // eg. n.engine.s
-  Object.assign(nssMainObject, nssElemObjects);
+  Object.assign(nssBaseObject, nssElemObjects);
 
   // Set n.condA, n.condB, etc:
   // eg. n.part.s
   Object.assign(
-    nssMainObject,
+    nssBaseObject,
     buildCondObjects(
-      nssMainObject.c,
-      baseName ? baseName + conditionalSeparator : ""
+      nssBaseObject.c,
+      baseName ? baseName + conditionalSeparator : "",
+      nssBaseObject as unknown as NSSObject<Base, Elem, Cond>
     )
   );
 
-  return nssMainObject as unknown as NSS<NameEnum, ElemEnum, CondEnum>;
+  return nssBaseObject as unknown as NSS<Base, Elem, Cond>;
 }
 
 // resolveNSSArg maps basic cond expressions (eg. n.myCond) to their corresponding
@@ -359,19 +377,20 @@ export default function nss<
 // n.myElem(n.myCondA, n.myCondB)
 // This obviates the need to supply fully-namespaced conditionals in this case, eg.
 // n.myElem(n.myElem.myCondA, n.myElem.myCondB)
-export function resolveNSSArg<CondEnum>(
-  builder: NSSObject<CondEnum>,
-  arg: string | NSSArg<CondEnum>
-): string | NSSArg<CondEnum> {
-  const { __nss__, __nssCondOff__, name } = arg as NSSCond<CondEnum>;
-  if (__nss__) {
-    const cond = (builder as unknown as Record<string, NSSCondFunc<CondEnum>>)[
-      name
-    ];
-    let nssObj = cond as NSSObject<CondEnum>;
+export function resolveNSSArg<Base, Elem, Cond>(
+  base: NSSBaseFunc<Base, Elem, Cond>,
+  builder: NSSObject<Base, Elem, Cond>,
+  arg: string | NSSArg<Base, Elem, Cond>
+): string | NSSArg<Base, Elem, Cond> {
+  arg = arg as NSSObject<Base, Elem, Cond>;
+  if (arg?.base === base) {
+    const cond = (
+      builder as unknown as Record<string, NSSCondFunc<Base, Elem, Cond>>
+    )[arg.name as string];
+    let nssObj = cond as NSSObject<Base, Elem, Cond>;
     if (!cond) {
-      nssObj = arg as NSSObject<CondEnum>;
-    } else if (__nssCondOff__) {
+      nssObj = arg as NSSObject<Base, Elem, Cond>;
+    } else if (arg.off) {
       return "";
     }
     const { cls, mapped } = nssObj;
@@ -382,8 +401,10 @@ export function resolveNSSArg<CondEnum>(
   return arg;
 }
 
-function constructNSSObject<CondEnum>({
+function constructNSSObject<Base, Elem, Cond>({
   parent,
+  base,
+  elem,
   mappings,
   mappingsLowercase,
   baseName,
@@ -395,14 +416,16 @@ function constructNSSObject<CondEnum>({
   strictBoolChecks,
   acceptArbitraryStrings,
 }: {
-  parent: NSSObject<CondEnum>;
+  base: NSSBaseFunc<Base, Elem, Cond>;
+  elem: NSSElemFunc<Base, Elem, Cond> | null;
+  parent: NSSObject<Base, Elem, Cond>;
   mappings: Map<string, string>;
   mappingsLowercase: Map<string, string>;
   baseName: string;
   baseClass: string;
   separator: string;
   afterClass: string;
-  values: NSSArg<CondEnum>[];
+  values: NSSArg<Base, Elem, Cond>[];
   caseSensitive: boolean;
   strictBoolChecks: boolean;
   acceptArbitraryStrings: boolean;
@@ -429,7 +452,8 @@ function constructNSSObject<CondEnum>({
   let str = afterClass;
 
   if (values.length) {
-    const composed = composeClass<CondEnum>({
+    const composed = composeClass<Base, Elem, Cond>({
+      base,
       parent,
       mappings,
       mappingsLowercase,
@@ -453,14 +477,18 @@ function constructNSSObject<CondEnum>({
     name: baseName,
     cls,
     c: cls, // alias
+    value: baseClass,
     mapped: afterClass.length ? afterClass : null,
     toString: toStringError,
+    base,
+    elem,
   };
 
   return nssObject;
 }
 
-function composeClass<CondEnum>({
+function composeClass<Base, Elem, Cond>({
+  base,
   parent,
   mappings,
   mappingsLowercase,
@@ -470,14 +498,16 @@ function composeClass<CondEnum>({
   strictBoolChecks,
   acceptArbitraryStrings,
 }: {
-  parent: NSSObject<CondEnum>;
+  base: NSSBaseFunc<Base, Elem, Cond>;
+  parent: NSSObject<Base, Elem, Cond>;
   mappings: Map<string, string>;
   mappingsLowercase: Map<string, string>;
   prefix: string;
-  values: NSSArg<CondEnum>[];
+  values: NSSArg<Base, Elem, Cond>[];
   caseSensitive: boolean;
   strictBoolChecks: boolean;
   acceptArbitraryStrings: boolean;
+  //TODO// }): [string, Record<keyof Cond, string>] {
 }): string {
   let res = "";
   for (const val of values) {
@@ -488,8 +518,8 @@ function composeClass<CondEnum>({
       );
     } else if (val) {
       // filter out null, undefined, false, 0, ""
-      if ((val as NSSObject<CondEnum>)?.__nss__) {
-        const str = resolveNSSArg(parent, val) as string;
+      if ((val as NSSObject<Base, Elem, Cond>)?.base === base) {
+        const str = resolveNSSArg(base, parent, val) as string;
         res += str?.length ? " " + str : "";
       } else {
         // this is an Object or Array:
@@ -560,15 +590,15 @@ function omitEnumReverseMappings<T>(enumObj: T): T {
       ) as T);
 }
 
-function extractNameEnumData<NameEnum, ElemEnum, CondEnum>(
-  nameEnum?: null | Record<string, string | number | boolean | null>,
-  classMap?: null | NSSClassMap<NameEnum, ElemEnum, CondEnum>
+function extractBaseData<Base, Elem, Cond>(
+  name?: null | Record<string, string | number | boolean | null>,
+  classMap?: null | NSSClassMap<Base, Elem, Cond>
 ): [string | null, string | null] {
   let baseName: string | null = null;
   let baseClass: string | null = null;
 
-  if (nameEnum && typeof nameEnum === "object") {
-    const entries = Object.entries(nameEnum);
+  if (name && typeof name === "object") {
+    const entries = Object.entries(name);
     if (entries.length > 1) {
       throw new Error(
         "NSS Error: Invalid name enum provided; should have at most 1 field."
@@ -589,7 +619,7 @@ function extractNameEnumData<NameEnum, ElemEnum, CondEnum>(
   if (baseName && classMap && typeof classMap === "object") {
     const mappedBaseCls =
       Object.prototype.hasOwnProperty.call(classMap, baseName) &&
-      classMap[baseName as keyof NameEnum];
+      classMap[baseName as keyof Base];
     if (mappedBaseCls) {
       baseClass = (baseClass ? baseClass + " " : "") + mappedBaseCls;
     }

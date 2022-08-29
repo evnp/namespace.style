@@ -1,12 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // Some test cases require type errors to be ignored;
 // these will employ @ts-ignore on a line-by-line basis
 // and require typescript-eslint's aggressive restriction
 // of these notations to be ignored ("ban-ts-comment").
 
-import nss, { NSS, NSSArg } from "../src/nss";
+import nss, { NSS } from "../src/nss";
 
-enum NameEnum {
+enum BaseEnum {
   Ship,
 }
 enum ElemEnum {
@@ -18,7 +19,7 @@ enum CondEnum {
   adrift,
 }
 
-enum NameEnumMapped {
+enum BaseEnumMapped {
   Ship = "abc",
 }
 enum ElemEnumMapped {
@@ -30,7 +31,7 @@ enum CondEnumMapped {
   adrift = "mno",
 }
 
-const NameObj = {
+const BaseObj = {
   Ship: true,
 };
 const ElemObj = {
@@ -42,7 +43,7 @@ const CondObj = {
   adrift: true,
 };
 
-const NameObjMapped = {
+const BaseObjMapped = {
   Ship: "abc",
 };
 const ElemObjMapped = {
@@ -56,13 +57,13 @@ const CondObjMapped = {
 
 describe("NSS", () => {
   describe.each([
-    ["enum-based", NameEnum, ElemEnum, CondEnum],
-    ["object-based", NameObj, ElemObj, CondObj],
-  ])("class composition :: %s", (_, Name, Elem, Cond) => {
-    let n: NSS<typeof Name, typeof Elem, typeof Cond>;
+    ["enum-based", BaseEnum, ElemEnum, CondEnum],
+    ["object-based", BaseObj, ElemObj, CondObj],
+  ])("class composition :: %s", (_, Base, Elem, Cond) => {
+    let n: NSS<typeof Base, typeof Elem, typeof Cond>;
 
     beforeAll(() => {
-      n = nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond);
+      n = nss<typeof Base, typeof Elem, typeof Cond>(Base, Elem, Cond);
     });
 
     test("name", () => {
@@ -75,9 +76,7 @@ describe("NSS", () => {
       expect(n().c).toBe("Ship");
       expect(n(["enterprise"]).c).toBe("Ship Ship--enterprise");
       expect(n({ enterprise: true }).c).toBe("Ship Ship--enterprise");
-      expect(
-        () => n("enterprise" as unknown as NSSArg<typeof Cond>).c
-      ).toThrow();
+      expect(() => n("enterprise" as unknown as string[]).c).toThrow();
       // We don't allow passing bare strings because that would make it too easy
       // to inadvertantly pass something like n.damaged.s resulting in bad class.
       // This is tough to detect automatically if we allow any string to be passed.
@@ -87,9 +86,7 @@ describe("NSS", () => {
       expect(n().cls).toBe("Ship");
       expect(n(["enterprise"]).cls).toBe("Ship Ship--enterprise");
       expect(n({ enterprise: true }).cls).toBe("Ship Ship--enterprise");
-      expect(
-        () => n("enterprise" as unknown as NSSArg<typeof Cond>).cls
-      ).toThrow();
+      expect(() => n("enterprise" as unknown as string[]).cls).toThrow();
 
       // Should throw: NSS expressions should never be cast directly to string.
       expect(() => `${n}`).toThrow();
@@ -102,9 +99,7 @@ describe("NSS", () => {
       expect(n.Ship().c).toBe("Ship");
       expect(n.Ship(["enterprise"]).c).toBe("Ship Ship--enterprise");
       expect(n.Ship({ enterprise: true }).c).toBe("Ship Ship--enterprise");
-      expect(
-        () => n.Ship("enterprise" as unknown as NSSArg<typeof Cond>).c
-      ).toThrow();
+      expect(() => n.Ship("enterprise" as unknown as string[]).c).toThrow();
       //
       expect(() => `${n.Ship}`).toThrow();
       expect(() => `${n.Ship()}`).toThrow();
@@ -120,9 +115,7 @@ describe("NSS", () => {
       expect(n.engine({ nacelle: true }).c).toBe(
         "Ship-engine Ship-engine--nacelle"
       );
-      expect(
-        () => n.engine("nacelle" as unknown as NSSArg<typeof Cond>).c
-      ).toThrow();
+      expect(() => n.engine("nacelle" as unknown as string[]).c).toThrow();
 
       // Test cls resolver (verbose version):
       expect(n.engine.cls).toBe("Ship-engine");
@@ -133,9 +126,7 @@ describe("NSS", () => {
       expect(n.engine({ nacelle: true }).cls).toBe(
         "Ship-engine Ship-engine--nacelle"
       );
-      expect(
-        () => n.engine("nacelle" as unknown as NSSArg<typeof Cond>).cls
-      ).toThrow();
+      expect(() => n.engine("nacelle" as unknown as string[]).cls).toThrow();
 
       // Should throw: NSS expressions should never be cast directly to string.
       expect(() => `${n.engine}`).toThrow();
@@ -149,9 +140,7 @@ describe("NSS", () => {
       expect(n.part({ warpDrive: true }).c).toBe(
         "Ship-part Ship-part--warpDrive"
       );
-      expect(
-        () => n.part("warpDrive" as unknown as NSSArg<typeof Cond>).c
-      ).toThrow();
+      expect(() => n.part("warpDrive" as unknown as string[]).c).toThrow();
 
       // Should throw: NSS expressions should never be cast directly to string.
       expect(() => `${n.part}`).toThrow();
@@ -167,9 +156,7 @@ describe("NSS", () => {
       expect(n.Ship.engine({ nacelle: true }).c).toBe(
         "Ship-engine Ship-engine--nacelle"
       );
-      expect(
-        () => n.Ship.engine("nacelle" as unknown as NSSArg<typeof Cond>).c
-      ).toThrow();
+      expect(() => n.Ship.engine("nacelle" as unknown as string[]).c).toThrow();
 
       // Should throw: NSS expressions should never be cast directly to string.
       expect(() => `${n.Ship.engine}`).toThrow();
@@ -185,9 +172,7 @@ describe("NSS", () => {
       expect(n.Ship.part({ warpDrive: true }).c).toBe(
         "Ship-part Ship-part--warpDrive"
       );
-      expect(
-        () => n.Ship.part("warpDrive" as unknown as NSSArg<typeof Cond>).c
-      ).toThrow();
+      expect(() => n.Ship.part("warpDrive" as unknown as string[]).c).toThrow();
 
       // Should throw: NSS expressions should never be cast directly to string.
       expect(() => `${n.Ship.part}`).toThrow();
@@ -388,8 +373,8 @@ describe("NSS", () => {
       expect(
         () =>
           n(
-            n.warp().c as unknown as NSSArg<typeof Cond>,
-            n.adrift().c as unknown as NSSArg<typeof Cond>
+            n.warp().c as unknown as string[],
+            n.adrift().c as unknown as string[]
           ).c
       ).toThrow();
 
@@ -435,8 +420,8 @@ describe("NSS", () => {
       expect(
         () =>
           n.part(
-            n.warp().c as unknown as NSSArg<typeof Cond>,
-            n.adrift().c as unknown as NSSArg<typeof Cond>
+            n.warp().c as unknown as string[],
+            n.adrift().c as unknown as string[]
           ).c
       ).toThrow();
 
@@ -620,26 +605,26 @@ describe("NSS", () => {
   describe.each([
     [
       "enum-based",
-      NameEnum,
+      BaseEnum,
       ElemEnum,
       CondEnum,
-      NameEnumMapped,
+      BaseEnumMapped,
       ElemEnumMapped,
       CondEnumMapped,
     ],
     [
       "object-based",
-      NameObj,
+      BaseObj,
       ElemObj,
       CondObj,
-      NameObjMapped,
+      BaseObjMapped,
       ElemObjMapped,
       CondObjMapped,
     ],
   ])(
     "class mapping :: %s",
-    (_, Name, Elem, Cond, NameMapped, ElemMapped, CondMapped) => {
-      function verifyBasicForms(n: NSS<typeof Name, typeof Elem, typeof Cond>) {
+    (_, Base, Elem, Cond, BaseMapped, ElemMapped, CondMapped) => {
+      function verifyBasicForms(n: any) {
         expect(n.c).toBe("Ship abc");
         expect(n().c).toBe("Ship abc");
 
@@ -687,9 +672,7 @@ describe("NSS", () => {
         expect(n.Ship.part.warp(false).c).toBe("Ship-part ghi");
       }
 
-      function verifyCompositionalForms(
-        n: NSS<typeof Name, typeof Elem, typeof Cond>
-      ) {
+      function verifyCompositionalForms(n: any) {
         expect(n(n.warp, n.adrift).c).toBe(
           "Ship abc Ship--warp jkl Ship--adrift mno"
         );
@@ -749,9 +732,7 @@ describe("NSS", () => {
         );
       }
 
-      function verifyChainedForms(
-        n: NSS<typeof Name, typeof Elem, typeof Cond>
-      ) {
+      function verifyChainedForms(n: any) {
         expect(n.warp().adrift().c).toBe(
           "Ship abc Ship--warp jkl Ship--adrift mno"
         );
@@ -789,8 +770,8 @@ describe("NSS", () => {
 
       test("enum values", () => {
         verifyBasicForms(
-          nss<typeof NameMapped, typeof ElemMapped, typeof CondMapped>(
-            NameMapped,
+          nss<typeof BaseMapped, typeof ElemMapped, typeof CondMapped>(
+            BaseMapped,
             ElemMapped,
             CondMapped
           )
@@ -799,8 +780,8 @@ describe("NSS", () => {
 
       test("enum values :: class composition", () => {
         verifyCompositionalForms(
-          nss<typeof NameMapped, typeof ElemMapped, typeof CondMapped>(
-            NameMapped,
+          nss<typeof BaseMapped, typeof ElemMapped, typeof CondMapped>(
+            BaseMapped,
             ElemMapped,
             CondMapped
           )
@@ -809,8 +790,8 @@ describe("NSS", () => {
 
       test("enum values :: chained conditionals", () => {
         verifyChainedForms(
-          nss<typeof NameMapped, typeof ElemMapped, typeof CondMapped>(
-            NameMapped,
+          nss<typeof BaseMapped, typeof ElemMapped, typeof CondMapped>(
+            BaseMapped,
             ElemMapped,
             CondMapped
           )
@@ -819,7 +800,7 @@ describe("NSS", () => {
 
       test("map object", () => {
         verifyBasicForms(
-          nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond, {
+          nss<typeof Base, typeof Elem, typeof Cond>(Base, Elem, Cond, {
             Ship: "abc",
             engine: "def",
             part: "ghi",
@@ -831,7 +812,7 @@ describe("NSS", () => {
 
       test("map object :: class composition", () => {
         verifyCompositionalForms(
-          nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond, {
+          nss<typeof Base, typeof Elem, typeof Cond>(Base, Elem, Cond, {
             Ship: "abc",
             engine: "def",
             part: "ghi",
@@ -843,7 +824,7 @@ describe("NSS", () => {
 
       test("map object :: chained conditionals", () => {
         verifyChainedForms(
-          nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond, {
+          nss<typeof Base, typeof Elem, typeof Cond>(Base, Elem, Cond, {
             Ship: "abc",
             engine: "def",
             part: "ghi",
@@ -855,7 +836,7 @@ describe("NSS", () => {
 
       test("generator function", () => {
         verifyBasicForms(
-          nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond, () => {
+          nss<typeof Base, typeof Elem, typeof Cond>(Base, Elem, Cond, () => {
             const alphabet = "abcdefghijklmnopqrstuvwxyz";
             return {
               Ship: alphabet.slice(0, 3),
@@ -870,7 +851,7 @@ describe("NSS", () => {
 
       test("generator function :: class composition", () => {
         verifyCompositionalForms(
-          nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond, () => {
+          nss<typeof Base, typeof Elem, typeof Cond>(Base, Elem, Cond, () => {
             const alphabet = "abcdefghijklmnopqrstuvwxyz";
             return {
               Ship: alphabet.slice(0, 3),
@@ -885,7 +866,7 @@ describe("NSS", () => {
 
       test("generator function :: chained conditionals", () => {
         verifyChainedForms(
-          nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond, () => {
+          nss<typeof Base, typeof Elem, typeof Cond>(Base, Elem, Cond, () => {
             const alphabet = "abcdefghijklmnopqrstuvwxyz";
             return {
               Ship: alphabet.slice(0, 3),
@@ -901,10 +882,10 @@ describe("NSS", () => {
   );
 
   describe.each([
-    ["enum-based", NameEnum, ElemEnum, CondEnum],
-    ["object-based", NameObj, ElemObj, CondObj],
-  ])("props :: %s", (_, Name, Elem, Cond) => {
-    let n: NSS<typeof Name, typeof Elem, typeof Cond>;
+    ["enum-based", BaseEnum, ElemEnum, CondEnum],
+    ["object-based", BaseObj, ElemObj, CondObj],
+  ])("props :: %s", (_, Base, Elem, Cond) => {
+    let n: NSS<typeof Base, typeof Elem, typeof Cond>;
 
     const fuzz = (assertion: (arg: unknown) => void) =>
       [
@@ -928,7 +909,7 @@ describe("NSS", () => {
       ].forEach((val) => assertion(val));
 
     beforeAll(() => {
-      n = nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond);
+      n = nss<typeof Base, typeof Elem, typeof Cond>(Base, Elem, Cond);
     });
 
     test("base class", () => {
@@ -937,18 +918,14 @@ describe("NSS", () => {
       expect(n.props(["warp"]).c).toBe("Ship Ship--warp");
       expect(n.props({ warp: true }).c).toBe("Ship Ship--warp");
       fuzz((val) => expect(n.props({ warp: val }).c).toBe("Ship"));
-      expect(
-        () => n.props("warp" as unknown as NSSArg<typeof Cond>).c
-      ).toThrow();
+      expect(() => n.props("warp" as unknown as string[]).c).toThrow();
 
       // Test cls resolver (verbose version):
       expect(n.props().cls).toBe("Ship");
       expect(n.props(["warp"]).cls).toBe("Ship Ship--warp");
       expect(n.props({ warp: true }).cls).toBe("Ship Ship--warp");
       fuzz((val) => expect(n.props({ warp: val }).cls).toBe("Ship"));
-      expect(
-        () => n.props("warp" as unknown as NSSArg<typeof Cond>).cls
-      ).toThrow();
+      expect(() => n.props("warp" as unknown as string[]).cls).toThrow();
 
       // Should throw: NSS expressions should never be cast directly to string.
       expect(() => `${n.props()}`).toThrow();
@@ -961,9 +938,7 @@ describe("NSS", () => {
       expect(n.Ship.props(["warp"]).c).toBe("Ship Ship--warp");
       expect(n.Ship.props({ warp: true }).c).toBe("Ship Ship--warp");
       fuzz((val) => expect(n.Ship.props({ warp: val }).c).toBe("Ship"));
-      expect(
-        () => n.Ship.props("warp" as unknown as NSSArg<typeof Cond>).c
-      ).toThrow();
+      expect(() => n.Ship.props("warp" as unknown as string[]).c).toThrow();
       //
       expect(() => `${n.Ship.props()}`).toThrow();
       expect(() => `${n.Ship.props(["warp"])}`).toThrow();
@@ -981,9 +956,7 @@ describe("NSS", () => {
       fuzz((val) =>
         expect(n.engine.props({ warp: val }).c).toBe("Ship-engine")
       );
-      expect(
-        () => n.engine("warp" as unknown as NSSArg<typeof Cond>).c
-      ).toThrow();
+      expect(() => n.engine("warp" as unknown as string[]).c).toThrow();
 
       // Test cls resolver (verbose version):
       expect(n.engine.props().cls).toBe("Ship-engine");
@@ -996,9 +969,7 @@ describe("NSS", () => {
       fuzz((val) =>
         expect(n.engine.props({ warp: val }).cls).toBe("Ship-engine")
       );
-      expect(
-        () => n.engine.props("warp" as unknown as NSSArg<typeof Cond>).cls
-      ).toThrow();
+      expect(() => n.engine.props("warp" as unknown as string[]).cls).toThrow();
 
       // Should throw: NSS expressions should never be cast directly to string.
       expect(() => `${n.engine.props()}`).toThrow();
@@ -1012,9 +983,7 @@ describe("NSS", () => {
         "Ship-part Ship-part--adrift"
       );
       fuzz((val) => expect(n.part.props({ adrift: val }).c).toBe("Ship-part"));
-      expect(
-        () => n.part.props("adrift" as unknown as NSSArg<typeof Cond>).c
-      ).toThrow();
+      expect(() => n.part.props("adrift" as unknown as string[]).c).toThrow();
 
       // Should throw: NSS expressions should never be cast directly to string.
       expect(() => `${n.part.props()}`).toThrow();
@@ -1033,7 +1002,7 @@ describe("NSS", () => {
         expect(n.Ship.engine.props({ warp: val }).c).toBe("Ship-engine")
       );
       expect(
-        () => n.Ship.engine.props("warp" as unknown as NSSArg<typeof Cond>).c
+        () => n.Ship.engine.props("warp" as unknown as string[]).c
       ).toThrow();
 
       // Should throw: NSS expressions should never be cast directly to string.
@@ -1055,7 +1024,7 @@ describe("NSS", () => {
         expect(n.Ship.part.props({ adrift: val }).c).toBe("Ship-part")
       );
       expect(
-        () => n.Ship.part.props("adrift" as unknown as NSSArg<typeof Cond>).c
+        () => n.Ship.part.props("adrift" as unknown as string[]).c
       ).toThrow();
 
       // Should throw: NSS expressions should never be cast directly to string.
@@ -1084,25 +1053,25 @@ describe("NSS", () => {
   describe.each([
     [
       "enum-based",
-      NameEnum,
+      BaseEnum,
       ElemEnum,
       CondEnum,
-      NameEnumMapped,
+      BaseEnumMapped,
       ElemEnumMapped,
       CondEnumMapped,
     ],
     [
       "object-based",
-      NameObj,
+      BaseObj,
       ElemObj,
       CondObj,
-      NameObjMapped,
+      BaseObjMapped,
       ElemObjMapped,
       CondObjMapped,
     ],
   ])(
     "omission :: %s",
-    (_, Name, Elem, Cond, NameMapped, ElemMapped, CondMapped) => {
+    (_, Base, Elem, Cond, BaseMapped, ElemMapped, CondMapped) => {
       test("omit base name", () => {
         const n = nss<object, typeof ElemMapped, typeof CondMapped>(
           {},
@@ -1139,8 +1108,8 @@ describe("NSS", () => {
       });
 
       test("omit elements", () => {
-        const n = nss<typeof NameMapped, object, typeof CondMapped>(
-          NameMapped,
+        const n = nss<typeof BaseMapped, object, typeof CondMapped>(
+          BaseMapped,
           null,
           CondMapped
         );
@@ -1175,7 +1144,7 @@ describe("NSS", () => {
       });
 
       test("omit elements + class mappings via map object", () => {
-        const n = nss<typeof Name, object, typeof Cond>(Name, null, Cond, {
+        const n = nss<typeof Base, object, typeof Cond>(Base, null, Cond, {
           Ship: "abc",
           warp: "jkl",
           // adrift omitted -- custom classes should be optional
@@ -1211,8 +1180,8 @@ describe("NSS", () => {
       });
 
       test("omit conditionals", () => {
-        const n = nss<typeof NameMapped, typeof ElemMapped>(
-          NameMapped,
+        const n = nss<typeof BaseMapped, typeof ElemMapped>(
+          BaseMapped,
           ElemMapped
         );
 
@@ -1225,7 +1194,7 @@ describe("NSS", () => {
       });
 
       test("omit conditionals + class mappings via map object", () => {
-        const n = nss<typeof Name, typeof Elem>(Name, Elem, null, {
+        const n = nss<typeof Base, typeof Elem>(Base, Elem, null, {
           Ship: "abc",
           engine: "def",
           part: "ghi",
@@ -1242,9 +1211,9 @@ describe("NSS", () => {
   );
 
   describe.each([
-    ["enum-based", NameEnumMapped, ElemEnumMapped, CondEnumMapped],
-    ["object-based", NameObjMapped, ElemObjMapped, CondObjMapped],
-  ])("configuration :: %s", (_, Name, Elem, Cond) => {
+    ["enum-based", BaseEnumMapped, ElemEnumMapped, CondEnumMapped],
+    ["object-based", BaseObjMapped, ElemObjMapped, CondObjMapped],
+  ])("configuration :: %s", (_, Base, Elem, Cond) => {
     afterEach(() => {
       nss.configure(null);
     });
@@ -1254,7 +1223,7 @@ describe("NSS", () => {
         separator: "_",
       });
 
-      let n = nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond);
+      let n = nss<typeof Base, typeof Elem, typeof Cond>(Base, Elem, Cond);
 
       expect(n.c).toBe("Ship abc");
       expect(n().c).toBe("Ship abc");
@@ -1306,7 +1275,7 @@ describe("NSS", () => {
         separator: "..",
       });
 
-      n = nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond);
+      n = nss<typeof Base, typeof Elem, typeof Cond>(Base, Elem, Cond);
 
       expect(n.c).toBe("Ship abc");
       expect(n().c).toBe("Ship abc");
@@ -1361,7 +1330,7 @@ describe("NSS", () => {
         conditionalSeparator: ":::",
       });
 
-      n = nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond);
+      n = nss<typeof Base, typeof Elem, typeof Cond>(Base, Elem, Cond);
 
       expect(n.c).toBe("Ship abc");
       expect(n().c).toBe("Ship abc");
@@ -1423,7 +1392,7 @@ describe("NSS", () => {
         separator: "_",
       });
 
-      let n = nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond);
+      let n = nss<typeof Base, typeof Elem, typeof Cond>(Base, Elem, Cond);
 
       expect(n.warp.c /*-------------*/).toBe("Ship abc Ship__warp jkl");
       expect(n.warp().c /*-----------*/).toBe("Ship abc Ship__warp jkl");
@@ -1434,7 +1403,7 @@ describe("NSS", () => {
 
       nss.configure(null);
 
-      n = nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond);
+      n = nss<typeof Base, typeof Elem, typeof Cond>(Base, Elem, Cond);
 
       expect(n.warp.c /*-------------*/).toBe("Ship abc Ship--warp jkl");
       expect(n.warp().c /*-----------*/).toBe("Ship abc Ship--warp jkl");
@@ -1448,7 +1417,7 @@ describe("NSS", () => {
         conditionalSeparator: ":::",
       });
 
-      n = nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond);
+      n = nss<typeof Base, typeof Elem, typeof Cond>(Base, Elem, Cond);
 
       expect(n.warp.c /*-------------*/).toBe("Ship abc Ship:::warp jkl");
       expect(n.warp().c /*-----------*/).toBe("Ship abc Ship:::warp jkl");
@@ -1459,7 +1428,7 @@ describe("NSS", () => {
 
       nss.configure(null);
 
-      n = nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond);
+      n = nss<typeof Base, typeof Elem, typeof Cond>(Base, Elem, Cond);
 
       expect(n.warp.c /*-------------*/).toBe("Ship abc Ship--warp jkl");
       expect(n.warp().c /*-----------*/).toBe("Ship abc Ship--warp jkl");
