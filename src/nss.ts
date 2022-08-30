@@ -9,9 +9,8 @@ export type NSSObject<Base, Elem, Cond> = {
   c: string; // alias
   name: string;
   value: string;
-  base: NSSObject<Base, Elem, Cond>;
-  elem: NSSObject<Base, Elem, Cond> | null;
-  //cond: (key?: Cond) => NSSCond<Base, Elem, Cond>; // TODO
+  parent: NSSObject<Base, Elem, Cond>;
+  //cond: (key?: Cond) => NSSCond<Base, Elem, Cond>;
   mapped: string | null;
   toString: () => string;
 };
@@ -164,8 +163,7 @@ export default function nss<Base = object, Elem = object, Cond = object>(
   function buildCondObjects(
     classPrelude: string,
     classPrefix: string,
-    nssBaseObject: NSSObject<Base, Elem, Cond>,
-    nssElemObject: NSSObject<Base, Elem, Cond> | null = null
+    parent: NSSObject<Base, Elem, Cond>
   ) {
     return Object.fromEntries(
       Object.entries(cond ?? {}).map(([condName, condClass]) => {
@@ -194,13 +192,9 @@ export default function nss<Base = object, Elem = object, Cond = object>(
             value: classPrefix + condName,
             mapped: afterClass.length ? afterClass : null,
             toString: toStringError,
-            base: nssBaseObject,
-            elem: nssElemObject,
+            parent,
           };
-          Object.assign(
-            nssObject,
-            buildCondObjects(cls, classPrefix, nssBaseObject, nssElemObject)
-          );
+          Object.assign(nssObject, buildCondObjects(cls, classPrefix, parent));
           return nssObject;
         }
 
@@ -210,8 +204,7 @@ export default function nss<Base = object, Elem = object, Cond = object>(
         nssCondObject.value = classPrefix + condName;
         nssCondObject.mapped = afterClass.length ? afterClass : null;
         nssCondObject.toString = toStringError;
-        nssCondObject.base = nssBaseObject;
-        nssCondObject.elem = nssElemObject;
+        nssCondObject.parent = parent;
 
         // Set n.cond.name:
         Object.defineProperty(nssCondObject, "name", {
@@ -233,8 +226,7 @@ export default function nss<Base = object, Elem = object, Cond = object>(
       function nssElemObject(...args: NSSArg<Base, Elem, Cond>[]) {
         return constructNSSObject({
           base: nssBaseObject as unknown as NSSBaseFunc<Base, Elem, Cond>,
-          elem: nssElemObject as unknown as NSSElemFunc<Base, Elem, Cond>,
-          parent: nssElemObject as unknown as NSSObject<Base, Elem, Cond>,
+          builder: nssElemObject as unknown as NSSObject<Base, Elem, Cond>,
           mappings,
           mappingsLowercase,
           baseName: elemName,
@@ -258,8 +250,7 @@ export default function nss<Base = object, Elem = object, Cond = object>(
       nssElemObject.props = function (...args: NSSArg<Base, Elem, Cond>[]) {
         return constructNSSObject({
           base: nssBaseObject as unknown as NSSBaseFunc<Base, Elem, Cond>,
-          elem: nssElemObject as unknown as NSSElemFunc<Base, Elem, Cond>,
-          parent: nssElemObject as unknown as NSSObject<Base, Elem, Cond>,
+          builder: nssElemObject as unknown as NSSObject<Base, Elem, Cond>,
           mappings,
           mappingsLowercase,
           baseName: elemName,
@@ -278,7 +269,6 @@ export default function nss<Base = object, Elem = object, Cond = object>(
         buildCondObjects(
           nssElemObject.c,
           classPrefix + elemName + conditionalSeparator,
-          nssBaseObject as unknown as NSSObject<Base, Elem, Cond>,
           nssElemObject as unknown as NSSObject<Base, Elem, Cond>
         )
       );
@@ -300,8 +290,7 @@ export default function nss<Base = object, Elem = object, Cond = object>(
   function nssBaseObject(...args: NSSArg<Base, Elem, Cond>[]) {
     return constructNSSObject({
       base: nssBaseObject as unknown as NSSBaseFunc<Base, Elem, Cond>,
-      elem: null,
-      parent: nssBaseObject as unknown as NSSObject<Base, Elem, Cond>,
+      builder: nssBaseObject as unknown as NSSObject<Base, Elem, Cond>,
       mappings,
       mappingsLowercase,
       baseName: baseName ?? "",
@@ -324,8 +313,7 @@ export default function nss<Base = object, Elem = object, Cond = object>(
   nssBaseObject.props = function (...args: NSSArg<Base, Elem, Cond>[]) {
     return constructNSSObject({
       base: nssBaseObject as unknown as NSSBaseFunc<Base, Elem, Cond>,
-      elem: null,
-      parent: nssBaseObject as unknown as NSSObject<Base, Elem, Cond>,
+      builder: nssBaseObject as unknown as NSSObject<Base, Elem, Cond>,
       mappings,
       mappingsLowercase,
       baseName: baseName ?? "",
@@ -381,9 +369,10 @@ export function resolveNSSArg<Base, Elem, Cond>(
   base: NSSBaseFunc<Base, Elem, Cond>,
   builder: NSSObject<Base, Elem, Cond>,
   arg: string | NSSArg<Base, Elem, Cond>
-): string | NSSArg<Base, Elem, Cond> {
+): string | null {
   arg = arg as NSSObject<Base, Elem, Cond>;
-  if (arg?.base === base) {
+  const parent = arg?.parent as NSSObject<Base, Elem, Cond>;
+  if (parent === base || parent?.parent === base) {
     const cond = (
       builder as unknown as Record<string, NSSCondFunc<Base, Elem, Cond>>
     )[arg.name as string];
@@ -397,14 +386,14 @@ export function resolveNSSArg<Base, Elem, Cond>(
     return cls.slice(
       cls.lastIndexOf(" ", cls.length - (mapped?.length ?? 0) - 1) + 1
     );
+  } else {
+    return null;
   }
-  return arg;
 }
 
 function constructNSSObject<Base, Elem, Cond>({
-  parent,
   base,
-  elem,
+  builder,
   mappings,
   mappingsLowercase,
   baseName,
@@ -417,8 +406,7 @@ function constructNSSObject<Base, Elem, Cond>({
   acceptArbitraryStrings,
 }: {
   base: NSSBaseFunc<Base, Elem, Cond>;
-  elem: NSSElemFunc<Base, Elem, Cond> | null;
-  parent: NSSObject<Base, Elem, Cond>;
+  builder: NSSObject<Base, Elem, Cond>;
   mappings: Map<string, string>;
   mappingsLowercase: Map<string, string>;
   baseName: string;
@@ -454,7 +442,7 @@ function constructNSSObject<Base, Elem, Cond>({
   if (values.length) {
     const composed = composeClass<Base, Elem, Cond>({
       base,
-      parent,
+      builder,
       mappings,
       mappingsLowercase,
       prefix: baseClass + (baseName ? separator : ""),
@@ -480,8 +468,7 @@ function constructNSSObject<Base, Elem, Cond>({
     value: baseClass,
     mapped: afterClass.length ? afterClass : null,
     toString: toStringError,
-    base,
-    elem,
+    parent: base,
   };
 
   return nssObject;
@@ -489,7 +476,7 @@ function constructNSSObject<Base, Elem, Cond>({
 
 function composeClass<Base, Elem, Cond>({
   base,
-  parent,
+  builder,
   mappings,
   mappingsLowercase,
   prefix,
@@ -499,7 +486,7 @@ function composeClass<Base, Elem, Cond>({
   acceptArbitraryStrings,
 }: {
   base: NSSBaseFunc<Base, Elem, Cond>;
-  parent: NSSObject<Base, Elem, Cond>;
+  builder: NSSObject<Base, Elem, Cond>;
   mappings: Map<string, string>;
   mappingsLowercase: Map<string, string>;
   prefix: string;
@@ -518,11 +505,12 @@ function composeClass<Base, Elem, Cond>({
       );
     } else if (val) {
       // filter out null, undefined, false, 0, ""
-      if ((val as NSSObject<Base, Elem, Cond>)?.base === base) {
-        const str = resolveNSSArg(base, parent, val) as string;
+      const str = resolveNSSArg(base, builder, val);
+      if (str !== null) {
+        // if val was an NSS object:
         res += str?.length ? " " + str : "";
       } else {
-        // this is an Object or Array:
+        // if val was an Object or Array:
         let entries;
         if (Array.isArray(val)) {
           entries = val.map<[string, boolean]>((cls) => [cls, true]);
