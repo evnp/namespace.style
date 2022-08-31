@@ -1,6 +1,6 @@
 {
   "name": "namespace.style",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "description": "A zero-dependency CSS class composer, bringing structure + types to the intersection between HTML + CSS",
   "main": "nss.js",
   "types": "nss.d.ts",

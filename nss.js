@@ -11,7 +11,7 @@ var __assign = (this && this.__assign) || function () {
     return __assign.apply(this, arguments);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resolveNSSArg = void 0;
+exports.resolveNSSArg = exports.isCondNSSObject = void 0;
 var defaultConfig = {
     separator: "",
     elementSeparator: "",
@@ -47,20 +47,37 @@ function configConditionalSeparator() {
     }
 }
 function toStringError() {
-    throw new Error("Don't coerce to string directly; use .c or .s (aliases: .cls .str)");
+    throw new Error("Don't coerce to string directly; use .c (alias: .cls)");
 }
-function nss(nameEnum, elemEnum, condEnum, classMap) {
+function isNSSObject(n) {
+    var _a;
+    return ((_a = n) === null || _a === void 0 ? void 0 : _a.toString) === toStringError;
+}
+function isBaseNSSObject(n) {
+    var _a;
+    return isNSSObject(n) && n === ((_a = n) === null || _a === void 0 ? void 0 : _a.parent);
+}
+function isElemNSSObject(n) {
+    var parent = n.parent;
+    return isBaseNSSObject(parent) && !isCondNSSObject(n);
+}
+function isCondNSSObject(n) {
+    var off = n.off;
+    return isNSSObject(n) && typeof off === "boolean";
+}
+exports.isCondNSSObject = isCondNSSObject;
+function nss(name, elem, cond, classMap) {
     var _a;
     var elementSeparator = configElementSeparator();
     var conditionalSeparator = configConditionalSeparator();
-    nameEnum = omitEnumReverseMappings(nameEnum);
-    elemEnum = omitEnumReverseMappings(elemEnum);
-    condEnum = omitEnumReverseMappings(condEnum);
+    name = omitEnumReverseMappings(name);
+    elem = omitEnumReverseMappings(elem);
+    cond = omitEnumReverseMappings(cond);
     if (typeof classMap === "function") {
         var classMapRet = {};
         classMap = (_a = classMap(classMapRet)) !== null && _a !== void 0 ? _a : classMapRet;
     }
-    var _b = extractNameEnumData(nameEnum, classMap), baseName = _b[0], baseClass = _b[1];
+    var _b = extractBaseData(name, classMap), baseName = _b[0], baseMappedClass = _b[1];
     // Cross-pollinate class mappings between enums and auxilliary mapping object:
     var mapEntries = Object.entries(classMap !== null && classMap !== void 0 ? classMap : []);
     var mappings = new Map(mapEntries);
@@ -69,7 +86,7 @@ function nss(nameEnum, elemEnum, condEnum, classMap) {
         return [k.toLowerCase(), k];
     }));
     if (baseName) {
-        mappings.set(baseName, baseClass !== null && baseClass !== void 0 ? baseClass : null);
+        mappings.set(baseName, baseMappedClass !== null && baseMappedClass !== void 0 ? baseMappedClass : null);
         mappingsLowercase.set(baseName.toLowerCase(), baseName);
     }
     function crossPollinate(_a) {
@@ -93,42 +110,47 @@ function nss(nameEnum, elemEnum, condEnum, classMap) {
         }
         return [name, cls];
     }
-    elemEnum = Object.fromEntries(Object.entries(elemEnum !== null && elemEnum !== void 0 ? elemEnum : {}).map(crossPollinate));
-    condEnum = Object.fromEntries(Object.entries(condEnum !== null && condEnum !== void 0 ? condEnum : {}).map(crossPollinate));
-    function buildCondObjects(classPrelude, classPrefix) {
-        return Object.fromEntries(Object.entries(condEnum !== null && condEnum !== void 0 ? condEnum : {}).map(function (_a) {
+    elem = Object.fromEntries(Object.entries(elem !== null && elem !== void 0 ? elem : {}).map(crossPollinate));
+    cond = Object.fromEntries(Object.entries(cond !== null && cond !== void 0 ? cond : {}).map(crossPollinate));
+    function buildCondObjects(priorClasses, classPrefix, parent) {
+        return Object.fromEntries(Object.entries(cond !== null && cond !== void 0 ? cond : {}).map(function (_a) {
             var condName = _a[0], condClass = _a[1];
-            var classPrelude_ = (classPrelude === null || classPrelude === void 0 ? void 0 : classPrelude.length) ? classPrelude + " " : "";
-            var afterClass = condClass && condClass !== condName ? " " + condClass : "";
+            var priorClasses_ = (priorClasses === null || priorClasses === void 0 ? void 0 : priorClasses.length) ? priorClasses + " " : "";
+            var _b = getMapped(condName, condClass), mapped = _b[0], _mapped = _b[1];
             function nssCondObject(on) {
                 // note: standard function rather than arrow-function needed here
                 //       so that arguments.length can be correctly inspected;
                 //       allows distinction between myCls() and myCls(undefined) calls
-                var str;
                 var cls;
-                var __nssCondOff__;
+                var off;
                 if (!arguments.length || on) {
-                    __nssCondOff__ = false;
-                    str = classPrefix + condName + afterClass;
-                    cls = classPrelude_ + str;
+                    off = false;
+                    cls = priorClasses_ + classPrefix + condName + _mapped;
                 }
                 else {
-                    __nssCondOff__ = true;
-                    str = "";
-                    cls = classPrelude;
+                    off = true;
+                    cls = priorClasses;
                 }
-                //const chainedStr = str.length ? chainStr_ + str : chainStr;
-                var chainedStr = str;
-                var nssObject = __assign(__assign({ __nss__: true }, (__nssCondOff__ ? { __nssCondOff__: true } : {})), { name: condName, cls: cls, c: cls, str: chainedStr, s: chainedStr, toString: toStringError });
-                Object.assign(nssObject, buildCondObjects(cls, classPrefix));
+                var nssObject = {
+                    off: off,
+                    cls: cls,
+                    c: cls,
+                    name: condName,
+                    value: classPrefix + condName,
+                    mapped: mapped,
+                    toString: toStringError,
+                    parent: parent,
+                };
+                Object.assign(nssObject, buildCondObjects(cls, classPrefix, parent));
                 return nssObject;
             }
-            nssCondObject.__nss__ = true;
-            nssCondObject.str = classPrefix + condName + afterClass;
-            nssCondObject.s = nssCondObject.str; // alias
-            nssCondObject.cls = classPrelude_ + classPrefix + condName + afterClass;
+            nssCondObject.off = false;
+            nssCondObject.cls = priorClasses_ + classPrefix + condName + _mapped;
             nssCondObject.c = nssCondObject.cls; // alias
+            nssCondObject.value = classPrefix + condName;
+            nssCondObject.mapped = mapped;
             nssCondObject.toString = toStringError;
+            nssCondObject.parent = parent;
             // Set n.cond.name:
             Object.defineProperty(nssCondObject, "name", {
                 value: condName,
@@ -137,57 +159,57 @@ function nss(nameEnum, elemEnum, condEnum, classMap) {
             return [condName, nssCondObject];
         }));
     }
-    var nssElemObjects = Object.fromEntries(Object.entries(elemEnum !== null && elemEnum !== void 0 ? elemEnum : {}).map(function (_a) {
-        var elemName = _a[0], elemClass = _a[1];
-        var afterClass = elemClass && elemClass !== elemName ? elemClass : "";
-        var classPrefix = baseName ? baseName + elementSeparator : "";
+    var nssElemObjects = Object.fromEntries(Object.entries(elem !== null && elem !== void 0 ? elem : {}).map(function (_a) {
+        var elemName = _a[0], elemMappedClass = _a[1];
+        var elemClass = (baseName ? baseName + elementSeparator : "") + elemName;
+        var _b = getMapped(elemName, elemMappedClass), mapped = _b[0], _mapped = _b[1];
         function nssElemObject() {
             var args = [];
             for (var _i = 0; _i < arguments.length; _i++) {
                 args[_i] = arguments[_i];
             }
             return constructNSSObject({
-                parent: nssElemObject,
+                name: elemName,
+                cls: elemClass,
+                separator: conditionalSeparator,
+                base: nssBaseObject,
+                builder: nssElemObject,
+                mapped: mapped,
                 mappings: mappings,
                 mappingsLowercase: mappingsLowercase,
-                baseName: elemName,
-                baseClass: classPrefix + elemName,
-                separator: conditionalSeparator,
-                afterClass: afterClass,
                 values: args,
                 caseSensitive: true,
                 strictBoolChecks: false,
                 acceptArbitraryStrings: true,
             });
         }
-        nssElemObject.__nss__ = true;
-        nssElemObject.str = afterClass;
-        nssElemObject.s = nssElemObject.str; // alias
-        var prefix = classPrefix + elemName;
-        var space = prefix.length && nssElemObject.str.length ? " " : "";
-        nssElemObject.cls = prefix + space + nssElemObject.str;
+        nssElemObject.cls = elemClass + _mapped;
         nssElemObject.c = nssElemObject.cls; // alias
+        nssElemObject.value = elemClass;
+        nssElemObject.mapped = mapped;
         nssElemObject.toString = toStringError;
+        nssElemObject.parent = nssBaseObject;
         nssElemObject.props = function () {
             var args = [];
             for (var _i = 0; _i < arguments.length; _i++) {
                 args[_i] = arguments[_i];
             }
             return constructNSSObject({
-                parent: nssElemObject,
+                name: elemName,
+                cls: elemClass,
+                separator: conditionalSeparator,
+                base: nssBaseObject,
+                builder: nssElemObject,
+                mapped: mapped,
                 mappings: mappings,
                 mappingsLowercase: mappingsLowercase,
-                baseName: elemName,
-                baseClass: classPrefix + elemName,
-                separator: conditionalSeparator,
-                afterClass: afterClass,
                 values: args,
                 caseSensitive: config.caseSensitiveProps,
                 strictBoolChecks: true,
                 acceptArbitraryStrings: false,
             });
         };
-        Object.assign(nssElemObject, buildCondObjects(nssElemObject.c, classPrefix + elemName + conditionalSeparator));
+        Object.assign(nssElemObject, buildCondObjects(nssElemObject.c, elemClass + conditionalSeparator, nssElemObject));
         // Set n.elem.name:
         Object.defineProperty(nssElemObject, "name", {
             value: elemName,
@@ -195,48 +217,49 @@ function nss(nameEnum, elemEnum, condEnum, classMap) {
         });
         return [elemName, nssElemObject];
     }));
-    var basePriorClass = baseName !== null && baseName !== void 0 ? baseName : "";
-    var baseAfterClass = baseClass !== null && baseClass !== void 0 ? baseClass : "";
+    var baseNameStr = baseName !== null && baseName !== void 0 ? baseName : "";
+    var _c = getMapped(baseName, baseMappedClass), mapped = _c[0], _mapped = _c[1];
     // Create top-level NSS object (en):
-    function nssMainObject() {
+    function nssBaseObject() {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
             args[_i] = arguments[_i];
         }
         return constructNSSObject({
-            parent: nssMainObject,
+            name: baseNameStr,
+            cls: baseNameStr,
+            separator: conditionalSeparator,
+            base: nssBaseObject,
+            builder: nssBaseObject,
+            mapped: mapped,
             mappings: mappings,
             mappingsLowercase: mappingsLowercase,
-            baseName: baseName !== null && baseName !== void 0 ? baseName : "",
-            baseClass: basePriorClass,
-            separator: conditionalSeparator,
-            afterClass: baseAfterClass,
             values: args,
             caseSensitive: true,
             strictBoolChecks: false,
             acceptArbitraryStrings: true,
         });
     }
-    nssMainObject.__nss__ = true;
-    nssMainObject.cls =
-        basePriorClass + (baseName && baseClass ? " " : "") + baseAfterClass;
-    nssMainObject.c = nssMainObject.cls; // alias
-    nssMainObject.str = baseAfterClass;
-    nssMainObject.s = nssMainObject.str; // alias
-    nssMainObject.toString = toStringError;
-    nssMainObject.props = function () {
+    nssBaseObject.cls = baseNameStr + _mapped;
+    nssBaseObject.c = nssBaseObject.cls; // alias
+    nssBaseObject.value = baseNameStr;
+    nssBaseObject.mapped = mapped;
+    nssBaseObject.toString = toStringError;
+    nssBaseObject.parent = nssBaseObject;
+    nssBaseObject.props = function () {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
             args[_i] = arguments[_i];
         }
         return constructNSSObject({
-            parent: nssMainObject,
+            name: baseNameStr,
+            cls: baseNameStr,
+            separator: conditionalSeparator,
+            base: nssBaseObject,
+            builder: nssBaseObject,
+            mapped: mapped,
             mappings: mappings,
             mappingsLowercase: mappingsLowercase,
-            baseName: baseName !== null && baseName !== void 0 ? baseName : "",
-            baseClass: basePriorClass,
-            separator: conditionalSeparator,
-            afterClass: baseAfterClass,
             values: args,
             caseSensitive: config.caseSensitiveProps,
             strictBoolChecks: true,
@@ -244,25 +267,25 @@ function nss(nameEnum, elemEnum, condEnum, classMap) {
         });
     };
     // Set n.name:
-    Object.defineProperty(nssMainObject, "name", {
+    Object.defineProperty(nssBaseObject, "name", {
         value: baseName,
         writable: false,
     });
     // Set n.<baseName>:
     // eg. n.Ship.s
     if (baseName) {
-        Object.defineProperty(nssMainObject, baseName, {
-            value: nssMainObject,
+        Object.defineProperty(nssBaseObject, baseName, {
+            value: nssBaseObject,
             writable: false,
         });
     }
     // Set n.elemA, n.elemB, etc:
     // eg. n.engine.s
-    Object.assign(nssMainObject, nssElemObjects);
+    Object.assign(nssBaseObject, nssElemObjects);
     // Set n.condA, n.condB, etc:
     // eg. n.part.s
-    Object.assign(nssMainObject, buildCondObjects(nssMainObject.c, baseName ? baseName + conditionalSeparator : ""));
-    return nssMainObject;
+    Object.assign(nssBaseObject, buildCondObjects(nssBaseObject.c, baseName ? baseName + conditionalSeparator : "", nssBaseObject));
+    return nssBaseObject;
 }
 exports.default = nss;
 // resolveNSSArg maps basic cond expressions (eg. n.myCond) to their corresponding
@@ -271,21 +294,26 @@ exports.default = nss;
 // This obviates the need to supply fully-namespaced conditionals in this case, eg.
 // n.myElem(n.myElem.myCondA, n.myElem.myCondB)
 function resolveNSSArg(builder, arg) {
-    var _a = arg, __nss__ = _a.__nss__, __nssCondOff__ = _a.__nssCondOff__, name = _a.name;
-    if (__nss__) {
-        var cond = builder[name];
-        if (cond) {
-            return __nssCondOff__ ? cond(false).str : cond.str;
+    var _a;
+    if (isNSSObject(arg)) {
+        var cond = builder[arg.name];
+        var nssObj = cond;
+        if (!cond) {
+            nssObj = arg;
         }
-        else {
-            return arg.str;
+        else if (arg.off) {
+            return "";
         }
+        var cls = nssObj.cls, mapped = nssObj.mapped;
+        return cls.slice(cls.lastIndexOf(" ", cls.length - ((_a = mapped === null || mapped === void 0 ? void 0 : mapped.length) !== null && _a !== void 0 ? _a : 0) - 2) + 1);
     }
-    return arg;
+    else {
+        return null;
+    }
 }
 exports.resolveNSSArg = resolveNSSArg;
 function constructNSSObject(_a) {
-    var parent = _a.parent, mappings = _a.mappings, mappingsLowercase = _a.mappingsLowercase, baseName = _a.baseName, baseClass = _a.baseClass, separator = _a.separator, afterClass = _a.afterClass, values = _a.values, caseSensitive = _a.caseSensitive, strictBoolChecks = _a.strictBoolChecks, acceptArbitraryStrings = _a.acceptArbitraryStrings;
+    var name = _a.name, cls = _a.cls, separator = _a.separator, base = _a.base, builder = _a.builder, mapped = _a.mapped, mappings = _a.mappings, mappingsLowercase = _a.mappingsLowercase, values = _a.values, caseSensitive = _a.caseSensitive, strictBoolChecks = _a.strictBoolChecks, acceptArbitraryStrings = _a.acceptArbitraryStrings;
     if (!caseSensitive && mappings.size != mappingsLowercase.size) {
         var keys_1 = Array.from(mappings.keys());
         var conflictKeys_1 = [];
@@ -299,15 +327,14 @@ function constructNSSObject(_a) {
         throw new Error("You're using multiple class names ".concat(conflict, "that are identical ") +
             "apart from casing; this causes ambiguity when using .props(...)");
     }
-    baseName = baseName !== null && baseName !== void 0 ? baseName : "";
     var space;
-    var str = afterClass;
+    var str = mapped !== null && mapped !== void 0 ? mapped : "";
     if (values.length) {
         var composed = composeClass({
-            parent: parent,
+            builder: builder,
             mappings: mappings,
             mappingsLowercase: mappingsLowercase,
-            prefix: baseClass + (baseName ? separator : ""),
+            prefix: cls + (cls.length ? separator : ""),
             values: values,
             caseSensitive: caseSensitive,
             strictBoolChecks: strictBoolChecks,
@@ -316,23 +343,21 @@ function constructNSSObject(_a) {
         space = str.length && composed.length ? " " : "";
         str += space + composed;
     }
-    var cls = baseClass;
     space = cls.length && str.length && str[0] !== " " ? " " : "";
-    cls += space + str;
     var nssObject = {
         __nss__: true,
-        name: baseName,
-        cls: cls,
-        c: cls,
-        str: str,
-        s: str,
+        name: name,
+        cls: cls + space + str,
+        c: cls + space + str,
+        value: cls,
+        mapped: mapped,
         toString: toStringError,
+        parent: base,
     };
     return nssObject;
 }
 function composeClass(_a) {
-    var _b;
-    var parent = _a.parent, mappings = _a.mappings, mappingsLowercase = _a.mappingsLowercase, prefix = _a.prefix, values = _a.values, caseSensitive = _a.caseSensitive, strictBoolChecks = _a.strictBoolChecks, acceptArbitraryStrings = _a.acceptArbitraryStrings;
+    var builder = _a.builder, mappings = _a.mappings, mappingsLowercase = _a.mappingsLowercase, prefix = _a.prefix, values = _a.values, caseSensitive = _a.caseSensitive, strictBoolChecks = _a.strictBoolChecks, acceptArbitraryStrings = _a.acceptArbitraryStrings;
     var res = "";
     for (var _i = 0, values_1 = values; _i < values_1.length; _i++) {
         var val = values_1[_i];
@@ -342,12 +367,13 @@ function composeClass(_a) {
         }
         else if (val) {
             // filter out null, undefined, false, 0, ""
-            if ((_b = val) === null || _b === void 0 ? void 0 : _b.__nss__) {
-                var str = resolveNSSArg(parent, val);
+            var str = resolveNSSArg(builder, val);
+            if (str !== null) {
+                // if val was an NSS object:
                 res += (str === null || str === void 0 ? void 0 : str.length) ? " " + str : "";
             }
             else {
-                // this is an Object or Array:
+                // if val was an Object or Array:
                 var entries = void 0;
                 if (Array.isArray(val)) {
                     entries = val.map(function (cls) { return [cls, true]; });
@@ -363,8 +389,8 @@ function composeClass(_a) {
                         throw new Error("NSS Error: Invalid input ".concat(JSON.stringify(val), "."));
                     }
                 }
-                for (var _c = 0, entries_1 = entries; _c < entries_1.length; _c++) {
-                    var _d = entries_1[_c], name_1 = _d[0], on = _d[1];
+                for (var _b = 0, entries_1 = entries; _b < entries_1.length; _b++) {
+                    var _c = entries_1[_b], name_1 = _c[0], on = _c[1];
                     if (on === true || // only recognize boolean values
                         (!strictBoolChecks && on) // unless strictBoolChecks=false
                     ) {
@@ -417,12 +443,12 @@ function omitEnumReverseMappings(enumObj) {
             ];
         }));
 }
-function extractNameEnumData(nameEnum, classMap) {
+function extractBaseData(name, classMap) {
     var _a;
     var baseName = null;
     var baseClass = null;
-    if (nameEnum && typeof nameEnum === "object") {
-        var entries = Object.entries(nameEnum);
+    if (name && typeof name === "object") {
+        var entries = Object.entries(name);
         if (entries.length > 1) {
             throw new Error("NSS Error: Invalid name enum provided; should have at most 1 field.");
         }
@@ -447,5 +473,16 @@ function extractNameEnumData(nameEnum, classMap) {
     }
     return [baseName, baseClass];
 }
+function getMapped(name, mappedClass) {
+    var mappedClassStr = (mappedClass !== null && mappedClass !== void 0 ? mappedClass : "");
+    var hasMappedClass = mappedClassStr.length && mappedClassStr !== name;
+    var mapped = hasMappedClass ? mappedClassStr : null;
+    var _mapped = hasMappedClass ? " " + mappedClassStr : "";
+    return [mapped, _mapped];
+}
 nss.config = config;
 nss.configure = configure;
+nss.isInstance = isNSSObject;
+nss.isBase = isBaseNSSObject;
+nss.isElem = isElemNSSObject;
+nss.isCond = isCondNSSObject;
