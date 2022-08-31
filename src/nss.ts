@@ -498,7 +498,6 @@ function composeClass<Base, Elem, Cond>({
   caseSensitive: boolean;
   strictBoolChecks: boolean;
   acceptArbitraryStrings: boolean;
-  //TODO// }): [string, Record<keyof Cond, string>] {
 }): string {
   let res = "";
   for (const val of values) {
