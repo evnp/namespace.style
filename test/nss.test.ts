@@ -58,15 +58,44 @@ const CondObjMapped = {
 function check(n: any, cls: string) {
   expect(n.c).toBe(cls);
   expect(n.cls).toBe(cls);
-  if (nss.isBase(n) || nss.isElem(n)) {
+  if (nss.isBase(n)) {
+    expect(nss.isBase(n.parent)).toBe(true);
     expect(n.value).toBe(cls.split(" ")[0]);
+    expect(n.name).toBe(n.name ? cls.split(" ")[0] : null);
+  } else if (nss.isElem(n)) {
+    expect(nss.isBase(n.parent)).toBe(true);
+    expect(n.value).toBe(cls.split(" ")[0]);
+    expect(n.name).toBe(
+      cls
+        .split(" ")[0]
+        .split(/[^a-zA-Z0-9]+/)
+        .slice(-1)[0]
+    );
   } else if (nss.isCond(n)) {
+    expect(nss.isBase(n.parent) || nss.isElem(n.parent)).toBe(true);
+    if (nss.isElem(n.parent)) {
+      expect(nss.isBase(n.parent.parent)).toBe(true);
+    }
     if (!n.off) {
       if (n.mapped) {
         expect(n.mapped).toBe(cls.split(" ").slice(-1)[0]);
         expect(n.value).toBe(cls.split(" ").slice(-2)[0]);
+        expect(n.name).toBe(
+          cls
+            .split(" ")
+            .slice(-2)[0]
+            .split(/[^a-zA-Z0-9]+/)
+            .slice(-1)[0]
+        );
       } else {
         expect(n.value).toBe(cls.split(" ").slice(-1)[0]);
+        expect(n.name).toBe(
+          cls
+            .split(" ")
+            .slice(-1)[0]
+            .split(/[^a-zA-Z0-9]+/)
+            .slice(-1)[0]
+        );
       }
     }
   } else {
