@@ -10,7 +10,6 @@ export type NSSObject<Base, Elem, Cond> = {
   name: string;
   value: string;
   parent: NSSObject<Base, Elem, Cond>;
-  //cond: (key?: Cond) => NSSCond<Base, Elem, Cond>;
   mapped: string | null;
   toString: () => string;
 };
@@ -98,6 +97,24 @@ function toStringError(): string {
   throw new Error("Don't coerce to string directly; use .c (alias: .cls)");
 }
 
+function isNSSObject(n: unknown) {
+  return (n as { toString: unknown })?.toString === toStringError;
+}
+
+function isBaseNSSObject(n: unknown) {
+  return isNSSObject(n) && n === (n as { parent: unknown })?.parent;
+}
+
+function isElemNSSObject(n: unknown) {
+  const { parent } = n as { parent: unknown };
+  return isBaseNSSObject(parent) && !isCondNSSObject(n);
+}
+
+export function isCondNSSObject(n: unknown) {
+  const { off } = n as { parent: unknown; off: boolean };
+  return isNSSObject(n) && typeof off === "boolean";
+}
+
 export default function nss<Base = object, Elem = object, Cond = object>(
   name?: null | Record<keyof Base, string | number | boolean>,
   elem?: null | Record<keyof Elem, string | number | boolean>,
@@ -121,7 +138,7 @@ export default function nss<Base = object, Elem = object, Cond = object>(
     classMap = classMap(classMapRet) ?? classMapRet;
   }
 
-  const [baseName, baseClass] = extractBaseData<Base, Elem, Cond>(
+  const [baseName, baseMappedClass] = extractBaseData<Base, Elem, Cond>(
     name,
     classMap
   );
@@ -133,7 +150,7 @@ export default function nss<Base = object, Elem = object, Cond = object>(
     mapEntries.map(([k]) => [k.toLowerCase(), k])
   );
   if (baseName) {
-    mappings.set(baseName, baseClass ?? null);
+    mappings.set(baseName, baseMappedClass ?? null);
     mappingsLowercase.set(baseName.toLowerCase(), baseName);
   }
   function crossPollinate([name, cls]: [string, unknown]): [string, unknown] {
@@ -161,15 +178,14 @@ export default function nss<Base = object, Elem = object, Cond = object>(
   ) as typeof cond;
 
   function buildCondObjects(
-    classPrelude: string,
+    priorClasses: string,
     classPrefix: string,
     parent: NSSObject<Base, Elem, Cond>
   ) {
     return Object.fromEntries(
       Object.entries(cond ?? {}).map(([condName, condClass]) => {
-        const classPrelude_ = classPrelude?.length ? classPrelude + " " : "";
-        const afterClass =
-          condClass && condClass !== condName ? " " + condClass : "";
+        const priorClasses_ = priorClasses?.length ? priorClasses + " " : "";
+        const [mapped, _mapped] = getMapped(condName, condClass);
 
         function nssCondObject(on?: unknown) {
           // note: standard function rather than arrow-function needed here
@@ -179,10 +195,10 @@ export default function nss<Base = object, Elem = object, Cond = object>(
           let off;
           if (!arguments.length || on) {
             off = false;
-            cls = classPrelude_ + classPrefix + condName + afterClass;
+            cls = priorClasses_ + classPrefix + condName + _mapped;
           } else {
             off = true;
-            cls = classPrelude;
+            cls = priorClasses;
           }
           const nssObject = {
             off,
@@ -190,7 +206,7 @@ export default function nss<Base = object, Elem = object, Cond = object>(
             c: cls, // alias
             name: condName,
             value: classPrefix + condName,
-            mapped: afterClass.length ? afterClass : null,
+            mapped,
             toString: toStringError,
             parent,
           };
@@ -199,10 +215,10 @@ export default function nss<Base = object, Elem = object, Cond = object>(
         }
 
         nssCondObject.off = false;
-        nssCondObject.cls = classPrelude_ + classPrefix + condName + afterClass;
+        nssCondObject.cls = priorClasses_ + classPrefix + condName + _mapped;
         nssCondObject.c = nssCondObject.cls; // alias
         nssCondObject.value = classPrefix + condName;
-        nssCondObject.mapped = afterClass.length ? afterClass : null;
+        nssCondObject.mapped = mapped;
         nssCondObject.toString = toStringError;
         nssCondObject.parent = parent;
 
@@ -218,21 +234,21 @@ export default function nss<Base = object, Elem = object, Cond = object>(
   }
 
   const nssElemObjects = Object.fromEntries(
-    Object.entries(elem ?? {}).map(([elemName, elemClass]) => {
-      const afterClass =
-        elemClass && elemClass !== elemName ? (elemClass as string) : "";
-      const classPrefix = baseName ? baseName + elementSeparator : "";
+    Object.entries(elem ?? {}).map(([elemName, elemMappedClass]) => {
+      const elemClass =
+        (baseName ? baseName + elementSeparator : "") + elemName;
+      const [mapped, _mapped] = getMapped(elemName, elemMappedClass);
 
       function nssElemObject(...args: NSSArg<Base, Elem, Cond>[]) {
-        return constructNSSObject({
-          base: nssBaseObject as unknown as NSSBaseFunc<Base, Elem, Cond>,
-          builder: nssElemObject as unknown as NSSObject<Base, Elem, Cond>,
+        return constructNSSObject<Base, Elem, Cond>({
+          name: elemName,
+          cls: elemClass,
+          separator: conditionalSeparator,
+          base: nssBaseObject,
+          builder: nssElemObject,
+          mapped,
           mappings,
           mappingsLowercase,
-          baseName: elemName,
-          baseClass: classPrefix + elemName,
-          separator: conditionalSeparator,
-          afterClass,
           values: args,
           caseSensitive: true,
           strictBoolChecks: false,
@@ -240,23 +256,22 @@ export default function nss<Base = object, Elem = object, Cond = object>(
         });
       }
 
-      const prefix = classPrefix + elemName;
-      const space = prefix.length && afterClass.length ? " " : "";
-      nssElemObject.cls = prefix + space + afterClass;
+      nssElemObject.cls = elemClass + _mapped;
       nssElemObject.c = nssElemObject.cls; // alias
-      nssElemObject.value = nssElemObject.cls;
-      nssElemObject.mapped = afterClass.length ? afterClass : null;
+      nssElemObject.value = elemClass;
+      nssElemObject.mapped = mapped;
       nssElemObject.toString = toStringError;
+      nssElemObject.parent = nssBaseObject;
       nssElemObject.props = function (...args: NSSArg<Base, Elem, Cond>[]) {
-        return constructNSSObject({
-          base: nssBaseObject as unknown as NSSBaseFunc<Base, Elem, Cond>,
-          builder: nssElemObject as unknown as NSSObject<Base, Elem, Cond>,
+        return constructNSSObject<Base, Elem, Cond>({
+          name: elemName,
+          cls: elemClass,
+          separator: conditionalSeparator,
+          base: nssBaseObject,
+          builder: nssElemObject,
+          mapped,
           mappings,
           mappingsLowercase,
-          baseName: elemName,
-          baseClass: classPrefix + elemName,
-          separator: conditionalSeparator,
-          afterClass,
           values: args,
           caseSensitive: config.caseSensitiveProps,
           strictBoolChecks: true,
@@ -268,7 +283,7 @@ export default function nss<Base = object, Elem = object, Cond = object>(
         nssElemObject,
         buildCondObjects(
           nssElemObject.c,
-          classPrefix + elemName + conditionalSeparator,
+          elemClass + conditionalSeparator,
           nssElemObject as unknown as NSSObject<Base, Elem, Cond>
         )
       );
@@ -283,20 +298,20 @@ export default function nss<Base = object, Elem = object, Cond = object>(
     })
   );
 
-  const basePriorClass = baseName ?? "";
-  const baseAfterClass = baseClass ?? "";
+  const baseNameStr = baseName ?? "";
+  const [mapped, _mapped] = getMapped(baseName, baseMappedClass);
 
   // Create top-level NSS object (en):
   function nssBaseObject(...args: NSSArg<Base, Elem, Cond>[]) {
-    return constructNSSObject({
-      base: nssBaseObject as unknown as NSSBaseFunc<Base, Elem, Cond>,
-      builder: nssBaseObject as unknown as NSSObject<Base, Elem, Cond>,
+    return constructNSSObject<Base, Elem, Cond>({
+      name: baseNameStr,
+      cls: baseNameStr,
+      separator: conditionalSeparator,
+      base: nssBaseObject,
+      builder: nssBaseObject,
+      mapped,
       mappings,
       mappingsLowercase,
-      baseName: baseName ?? "",
-      baseClass: basePriorClass,
-      separator: conditionalSeparator,
-      afterClass: baseAfterClass,
       values: args,
       caseSensitive: true,
       strictBoolChecks: false,
@@ -304,22 +319,22 @@ export default function nss<Base = object, Elem = object, Cond = object>(
     });
   }
 
-  nssBaseObject.cls =
-    basePriorClass + (baseName && baseClass ? " " : "") + baseAfterClass;
+  nssBaseObject.cls = baseNameStr + _mapped;
   nssBaseObject.c = nssBaseObject.cls; // alias
-  nssBaseObject.value = nssBaseObject.cls;
-  nssBaseObject.mapped = baseAfterClass.length ? baseAfterClass : null;
+  nssBaseObject.value = baseNameStr;
+  nssBaseObject.mapped = mapped;
   nssBaseObject.toString = toStringError;
+  nssBaseObject.parent = nssBaseObject;
   nssBaseObject.props = function (...args: NSSArg<Base, Elem, Cond>[]) {
-    return constructNSSObject({
-      base: nssBaseObject as unknown as NSSBaseFunc<Base, Elem, Cond>,
-      builder: nssBaseObject as unknown as NSSObject<Base, Elem, Cond>,
+    return constructNSSObject<Base, Elem, Cond>({
+      name: baseNameStr,
+      cls: baseNameStr,
+      separator: conditionalSeparator,
+      base: nssBaseObject,
+      builder: nssBaseObject,
+      mapped,
       mappings,
       mappingsLowercase,
-      baseName: baseName ?? "",
-      baseClass: basePriorClass,
-      separator: conditionalSeparator,
-      afterClass: baseAfterClass,
       values: args,
       caseSensitive: config.caseSensitiveProps,
       strictBoolChecks: true,
@@ -366,25 +381,22 @@ export default function nss<Base = object, Elem = object, Cond = object>(
 // This obviates the need to supply fully-namespaced conditionals in this case, eg.
 // n.myElem(n.myElem.myCondA, n.myElem.myCondB)
 export function resolveNSSArg<Base, Elem, Cond>(
-  base: NSSBaseFunc<Base, Elem, Cond>,
   builder: NSSObject<Base, Elem, Cond>,
   arg: string | NSSArg<Base, Elem, Cond>
 ): string | null {
-  arg = arg as NSSObject<Base, Elem, Cond>;
-  const parent = arg?.parent as NSSObject<Base, Elem, Cond>;
-  if (parent === base || parent?.parent === base) {
+  if (isNSSObject(arg)) {
     const cond = (
       builder as unknown as Record<string, NSSCondFunc<Base, Elem, Cond>>
-    )[arg.name as string];
+    )[(arg as { name: string }).name as string];
     let nssObj = cond as NSSObject<Base, Elem, Cond>;
     if (!cond) {
       nssObj = arg as NSSObject<Base, Elem, Cond>;
-    } else if (arg.off) {
+    } else if ((arg as { off: boolean }).off) {
       return "";
     }
     const { cls, mapped } = nssObj;
     return cls.slice(
-      cls.lastIndexOf(" ", cls.length - (mapped?.length ?? 0) - 1) + 1
+      cls.lastIndexOf(" ", cls.length - (mapped?.length ?? 0) - 2) + 1
     );
   } else {
     return null;
@@ -392,27 +404,27 @@ export function resolveNSSArg<Base, Elem, Cond>(
 }
 
 function constructNSSObject<Base, Elem, Cond>({
+  name,
+  cls,
+  separator,
   base,
   builder,
+  mapped,
   mappings,
   mappingsLowercase,
-  baseName,
-  baseClass,
-  separator,
-  afterClass,
   values,
   caseSensitive,
   strictBoolChecks,
   acceptArbitraryStrings,
 }: {
-  base: NSSBaseFunc<Base, Elem, Cond>;
+  name: string;
+  cls: string;
+  separator: string;
+  base: NSSObject<Base, Elem, Cond>;
   builder: NSSObject<Base, Elem, Cond>;
+  mapped: string | null;
   mappings: Map<string, string>;
   mappingsLowercase: Map<string, string>;
-  baseName: string;
-  baseClass: string;
-  separator: string;
-  afterClass: string;
   values: NSSArg<Base, Elem, Cond>[];
   caseSensitive: boolean;
   strictBoolChecks: boolean;
@@ -434,18 +446,15 @@ function constructNSSObject<Base, Elem, Cond>({
     );
   }
 
-  baseName = baseName ?? "";
-
   let space;
-  let str = afterClass;
+  let str = mapped ?? "";
 
   if (values.length) {
     const composed = composeClass<Base, Elem, Cond>({
-      base,
       builder,
       mappings,
       mappingsLowercase,
-      prefix: baseClass + (baseName ? separator : ""),
+      prefix: cls + (cls.length ? separator : ""),
       values,
       caseSensitive,
       strictBoolChecks,
@@ -455,18 +464,15 @@ function constructNSSObject<Base, Elem, Cond>({
     str += space + composed;
   }
 
-  let cls = baseClass;
-
   space = cls.length && str.length && str[0] !== " " ? " " : "";
-  cls += space + str;
 
   const nssObject = {
     __nss__: true,
-    name: baseName,
-    cls,
-    c: cls, // alias
-    value: baseClass,
-    mapped: afterClass.length ? afterClass : null,
+    name,
+    cls: cls + space + str,
+    c: cls + space + str, // alias
+    value: cls,
+    mapped,
     toString: toStringError,
     parent: base,
   };
@@ -475,7 +481,6 @@ function constructNSSObject<Base, Elem, Cond>({
 }
 
 function composeClass<Base, Elem, Cond>({
-  base,
   builder,
   mappings,
   mappingsLowercase,
@@ -485,7 +490,6 @@ function composeClass<Base, Elem, Cond>({
   strictBoolChecks,
   acceptArbitraryStrings,
 }: {
-  base: NSSBaseFunc<Base, Elem, Cond>;
   builder: NSSObject<Base, Elem, Cond>;
   mappings: Map<string, string>;
   mappingsLowercase: Map<string, string>;
@@ -505,7 +509,7 @@ function composeClass<Base, Elem, Cond>({
       );
     } else if (val) {
       // filter out null, undefined, false, 0, ""
-      const str = resolveNSSArg(base, builder, val);
+      const str = resolveNSSArg(builder, val);
       if (str !== null) {
         // if val was an NSS object:
         res += str?.length ? " " + str : "";
@@ -616,5 +620,20 @@ function extractBaseData<Base, Elem, Cond>(
   return [baseName, baseClass];
 }
 
+function getMapped(
+  name: string | null,
+  mappedClass: unknown
+): [string | null, string] {
+  const mappedClassStr = (mappedClass ?? "") as string;
+  const hasMappedClass = mappedClassStr.length && mappedClassStr !== name;
+  const mapped = hasMappedClass ? mappedClassStr : null;
+  const _mapped = hasMappedClass ? " " + mappedClassStr : "";
+  return [mapped, _mapped];
+}
+
 nss.config = config;
 nss.configure = configure;
+nss.isInstance = isNSSObject;
+nss.isBase = isBaseNSSObject;
+nss.isElem = isElemNSSObject;
+nss.isCond = isCondNSSObject;

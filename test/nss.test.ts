@@ -55,6 +55,28 @@ const CondObjMapped = {
   adrift: "mno",
 };
 
+function check(n: any, cls: string) {
+  expect(n.c).toBe(cls);
+  expect(n.cls).toBe(cls);
+  if (nss.isBase(n) || nss.isElem(n)) {
+    expect(n.value).toBe(cls.split(" ")[0]);
+  } else if (nss.isCond(n)) {
+    if (!n.off) {
+      if (n.mapped) {
+        expect(n.mapped).toBe(cls.split(" ").slice(-1)[0]);
+        expect(n.value).toBe(cls.split(" ").slice(-2)[0]);
+      } else {
+        expect(n.value).toBe(cls.split(" ").slice(-1)[0]);
+      }
+    }
+  } else {
+    throw new Error("check n arg must be an NSS Base, Elem, or Cond object");
+  }
+  // Should throw -- NSS expressions should never be cast directly to string:
+  expect(() => n.toString()).toThrow();
+  expect(() => `${n}`).toThrow();
+}
+
 describe("NSS", () => {
   describe.each([
     ["enum-based", BaseEnum, ElemEnum, CondEnum],
@@ -72,302 +94,134 @@ describe("NSS", () => {
 
     test("base class", () => {
       // Test cls resolver (short version):
-      expect(n.c).toBe("Ship");
-      expect(n().c).toBe("Ship");
-      expect(n(["enterprise"]).c).toBe("Ship Ship--enterprise");
-      expect(n({ enterprise: true }).c).toBe("Ship Ship--enterprise");
+      check(n, "Ship");
+      check(n(), "Ship");
+      check(n(["enterprise"]), "Ship Ship--enterprise");
+      check(n({ enterprise: true }), "Ship Ship--enterprise");
       expect(() => n("enterprise" as unknown as string[]).c).toThrow();
+      expect(() => n("enterprise" as unknown as string[]).cls).toThrow();
       // We don't allow passing bare strings because that would make it too easy
       // to inadvertantly pass something like n.damaged.s resulting in bad class.
       // This is tough to detect automatically if we allow any string to be passed.
 
-      // Test cls resolver (verbose version):
-      expect(n.cls).toBe("Ship");
-      expect(n().cls).toBe("Ship");
-      expect(n(["enterprise"]).cls).toBe("Ship Ship--enterprise");
-      expect(n({ enterprise: true }).cls).toBe("Ship Ship--enterprise");
-      expect(() => n("enterprise" as unknown as string[]).cls).toThrow();
-
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n}`).toThrow();
-      expect(() => `${n()}`).toThrow();
-      expect(() => `${n(["enterprise"])}`).toThrow();
-      expect(() => `${n({ enterprise: true })}`).toThrow();
-
       // Allow optional explicit specification of base name:
-      expect(n.Ship.c).toBe("Ship");
-      expect(n.Ship().c).toBe("Ship");
-      expect(n.Ship(["enterprise"]).c).toBe("Ship Ship--enterprise");
-      expect(n.Ship({ enterprise: true }).c).toBe("Ship Ship--enterprise");
+      check(n.Ship, "Ship");
+      check(n.Ship(), "Ship");
+      check(n.Ship(["enterprise"]), "Ship Ship--enterprise");
+      check(n.Ship({ enterprise: true }), "Ship Ship--enterprise");
       expect(() => n.Ship("enterprise" as unknown as string[]).c).toThrow();
-      //
-      expect(() => `${n.Ship}`).toThrow();
-      expect(() => `${n.Ship()}`).toThrow();
-      expect(() => `${n.Ship(["enterprise"])}`).toThrow();
-      expect(() => `${n.Ship({ enterprise: true })}`).toThrow();
     });
 
     test("element classes", () => {
       // Test cls resolver (short version):
-      expect(n.engine.c).toBe("Ship-engine");
-      expect(n.engine().c).toBe("Ship-engine");
-      expect(n.engine(["nacelle"]).c).toBe("Ship-engine Ship-engine--nacelle");
-      expect(n.engine({ nacelle: true }).c).toBe(
-        "Ship-engine Ship-engine--nacelle"
-      );
+      check(n.engine, "Ship-engine");
+      check(n.engine(), "Ship-engine");
+      check(n.engine(["nacelle"]), "Ship-engine Ship-engine--nacelle");
+      check(n.engine({ nacelle: true }), "Ship-engine Ship-engine--nacelle");
       expect(() => n.engine("nacelle" as unknown as string[]).c).toThrow();
-
-      // Test cls resolver (verbose version):
-      expect(n.engine.cls).toBe("Ship-engine");
-      expect(n.engine().cls).toBe("Ship-engine");
-      expect(n.engine(["nacelle"]).cls).toBe(
-        "Ship-engine Ship-engine--nacelle"
-      );
-      expect(n.engine({ nacelle: true }).cls).toBe(
-        "Ship-engine Ship-engine--nacelle"
-      );
       expect(() => n.engine("nacelle" as unknown as string[]).cls).toThrow();
 
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n.engine}`).toThrow();
-      expect(() => `${n.engine()}`).toThrow();
-      expect(() => `${n.engine(["nacelle"])}`).toThrow();
-      expect(() => `${n.engine({ nacelle: true })}`).toThrow();
-
-      expect(n.part.c).toBe("Ship-part");
-      expect(n.part().c).toBe("Ship-part");
-      expect(n.part(["warpDrive"]).c).toBe("Ship-part Ship-part--warpDrive");
-      expect(n.part({ warpDrive: true }).c).toBe(
-        "Ship-part Ship-part--warpDrive"
-      );
+      check(n.part, "Ship-part");
+      check(n.part(), "Ship-part");
+      check(n.part(["warpDrive"]), "Ship-part Ship-part--warpDrive");
+      check(n.part({ warpDrive: true }), "Ship-part Ship-part--warpDrive");
       expect(() => n.part("warpDrive" as unknown as string[]).c).toThrow();
 
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n.part}`).toThrow();
-      expect(() => `${n.part()}`).toThrow();
-      expect(() => `${n.part(["warpDrive"])}`).toThrow();
-      expect(() => `${n.part({ warpDrive: true })}`).toThrow();
-
-      expect(n.Ship.engine.c).toBe("Ship-engine");
-      expect(n.Ship.engine().c).toBe("Ship-engine");
-      expect(n.Ship.engine(["nacelle"]).c).toBe(
-        "Ship-engine Ship-engine--nacelle"
-      );
-      expect(n.Ship.engine({ nacelle: true }).c).toBe(
+      check(n.Ship.engine, "Ship-engine");
+      check(n.Ship.engine(), "Ship-engine");
+      check(n.Ship.engine(["nacelle"]), "Ship-engine Ship-engine--nacelle");
+      check(
+        n.Ship.engine({ nacelle: true }),
         "Ship-engine Ship-engine--nacelle"
       );
       expect(() => n.Ship.engine("nacelle" as unknown as string[]).c).toThrow();
 
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n.Ship.engine}`).toThrow();
-      expect(() => `${n.Ship.engine()}`).toThrow();
-      expect(() => `${n.Ship.engine(["nacelle"])}`).toThrow();
-      expect(() => `${n.Ship.engine({ nacelle: true })}`).toThrow();
-
-      expect(n.Ship.part.c).toBe("Ship-part");
-      expect(n.Ship.part().c).toBe("Ship-part");
-      expect(n.Ship.part(["warpDrive"]).c).toBe(
-        "Ship-part Ship-part--warpDrive"
-      );
-      expect(n.Ship.part({ warpDrive: true }).c).toBe(
-        "Ship-part Ship-part--warpDrive"
-      );
+      check(n.Ship.part, "Ship-part");
+      check(n.Ship.part(), "Ship-part");
+      check(n.Ship.part(["warpDrive"]), "Ship-part Ship-part--warpDrive");
+      check(n.Ship.part({ warpDrive: true }), "Ship-part Ship-part--warpDrive");
       expect(() => n.Ship.part("warpDrive" as unknown as string[]).c).toThrow();
-
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n.Ship.part}`).toThrow();
-      expect(() => `${n.Ship.part()}`).toThrow();
-      expect(() => `${n.Ship.part(["warpDrive"])}`).toThrow();
-      expect(() => `${n.Ship.part({ warpDrive: true })}`).toThrow();
     });
 
     test("conditional classes", () => {
       // Test cls resolver (short version):
-      expect(n.warp.c /*---------------*/).toBe("Ship Ship--warp");
-      expect(n.warp().c /*-------------*/).toBe("Ship Ship--warp");
+      check(n.warp, "Ship Ship--warp");
+      check(n.warp(), "Ship Ship--warp");
 
-      // Test cls resolver (verbose version):
-      expect(n.warp.cls /*-----------*/).toBe("Ship Ship--warp");
-      expect(n.warp().cls /*---------*/).toBe("Ship Ship--warp");
+      check(n.warp(true), "Ship Ship--warp");
+      check(n.warp(false), "Ship");
+      check(n.warp(0), "Ship");
+      check(n.warp(1), "Ship Ship--warp");
+      check(n.warp(null), "Ship");
+      check(n.warp(undefined), "Ship");
+      check(n.warp("klingon"), "Ship Ship--warp");
+      check(n.warp(""), "Ship");
 
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n.warp}`).toThrow();
-      expect(() => `${n.warp()}`).toThrow();
+      check(n.adrift, "Ship Ship--adrift");
+      check(n.adrift(), "Ship Ship--adrift");
 
-      expect(n.warp(true).c /*---------*/).toBe("Ship Ship--warp");
-      expect(n.warp(false).c /*--------*/).toBe("Ship");
-      expect(n.warp(0).c /*------------*/).toBe("Ship");
-      expect(n.warp(1).c /*------------*/).toBe("Ship Ship--warp");
-      expect(n.warp(null).c /*---------*/).toBe("Ship");
-      expect(n.warp(undefined).c /*----*/).toBe("Ship");
-      expect(n.warp("klingon").c /*----*/).toBe("Ship Ship--warp");
-      expect(n.warp("").c /*-----------*/).toBe("Ship");
+      check(n.adrift(true), "Ship Ship--adrift");
+      check(n.adrift(false), "Ship");
+      check(n.adrift(0), "Ship");
+      check(n.adrift(1), "Ship Ship--adrift");
+      check(n.adrift(null), "Ship");
+      check(n.adrift(undefined), "Ship");
+      check(n.adrift("damaged"), "Ship Ship--adrift");
+      check(n.adrift(""), "Ship");
 
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n.warp(true)}`).toThrow();
-      expect(() => `${n.warp(false)}`).toThrow();
-      expect(() => `${n.warp(0)}`).toThrow();
-      expect(() => `${n.warp(1)}`).toThrow();
-      expect(() => `${n.warp(null)}`).toThrow();
-      expect(() => `${n.warp(undefined)}`).toThrow();
-      expect(() => `${n.warp("klingon")}`).toThrow();
-      expect(() => `${n.warp("")}`).toThrow();
+      check(n.Ship.warp, "Ship Ship--warp");
+      check(n.Ship.warp(), "Ship Ship--warp");
 
-      expect(n.adrift.c /*-------------*/).toBe("Ship Ship--adrift");
-      expect(n.adrift().c /*-----------*/).toBe("Ship Ship--adrift");
+      check(n.Ship.warp(true), "Ship Ship--warp");
+      check(n.Ship.warp(false), "Ship");
 
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n.adrift}`).toThrow();
-      expect(() => `${n.adrift()}`).toThrow();
+      check(n.Ship.adrift, "Ship Ship--adrift");
+      check(n.Ship.adrift(), "Ship Ship--adrift");
 
-      expect(n.adrift(true).c /*-------*/).toBe("Ship Ship--adrift");
-      expect(n.adrift(false).c /*------*/).toBe("Ship");
-      expect(n.adrift(0).c /*----------*/).toBe("Ship");
-      expect(n.adrift(1).c /*----------*/).toBe("Ship Ship--adrift");
-      expect(n.adrift(null).c /*-------*/).toBe("Ship");
-      expect(n.adrift(undefined).c /*--*/).toBe("Ship");
-      expect(n.adrift("damaged").c /*--*/).toBe("Ship Ship--adrift");
-      expect(n.adrift("").c /*---------*/).toBe("Ship");
-
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n.adrift(true)}`).toThrow();
-      expect(() => `${n.adrift(false)}`).toThrow();
-      expect(() => `${n.adrift(0)}`).toThrow();
-      expect(() => `${n.adrift(1)}`).toThrow();
-      expect(() => `${n.adrift("")}`).toThrow();
-      expect(() => `${n.adrift("damaged")}`).toThrow();
-      expect(() => `${n.adrift(null)}`).toThrow();
-      expect(() => `${n.adrift(undefined)}`).toThrow();
-
-      expect(n.Ship.warp.c /*----------*/).toBe("Ship Ship--warp");
-      expect(n.Ship.warp().c /*--------*/).toBe("Ship Ship--warp");
-
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n.Ship.warp}`).toThrow();
-      expect(() => `${n.Ship.warp()}`).toThrow();
-
-      expect(n.Ship.warp(true).c /*----*/).toBe("Ship Ship--warp");
-      expect(n.Ship.warp(false).c /*---*/).toBe("Ship");
-
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n.Ship.warp(true)}`).toThrow();
-      expect(() => `${n.Ship.warp(false)}`).toThrow();
-
-      expect(n.Ship.adrift.c /*--------*/).toBe("Ship Ship--adrift");
-      expect(n.Ship.adrift().c /*------*/).toBe("Ship Ship--adrift");
-
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n.Ship.adrift /*----*/}`).toThrow();
-      expect(() => `${n.Ship.adrift() /*--*/}`).toThrow();
-
-      expect(n.Ship.adrift(true).c /*--*/).toBe("Ship Ship--adrift");
-      expect(n.Ship.adrift(false).c /*-*/).toBe("Ship");
-
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n.Ship.adrift(true)}`).toThrow();
-      expect(() => `${n.Ship.adrift(false)}`).toThrow();
+      check(n.Ship.adrift(true), "Ship Ship--adrift");
+      check(n.Ship.adrift(false), "Ship");
     });
 
     test("element conditional classes", () => {
       // Test cls resolver (short version):
-      expect(n.part.warp.c /*------------*/).toBe("Ship-part Ship-part--warp");
-      expect(n.part.warp().c /*----------*/).toBe("Ship-part Ship-part--warp");
-      expect(n.part.warp(true).c /*------*/).toBe("Ship-part Ship-part--warp");
-      expect(n.part.warp(false).c /*-----*/).toBe("Ship-part");
-      expect(n.part.warp(0).c /*---------*/).toBe("Ship-part");
-      expect(n.part.warp(1).c /*---------*/).toBe("Ship-part Ship-part--warp");
-      expect(n.part.warp(null).c /*------*/).toBe("Ship-part");
-      expect(n.part.warp(undefined).c /*-*/).toBe("Ship-part");
-      expect(n.part.warp("klingon").c /*-*/).toBe("Ship-part Ship-part--warp");
-      expect(n.part.warp("").c /*--------*/).toBe("Ship-part");
+      check(n.part.warp, "Ship-part Ship-part--warp");
+      check(n.part.warp(), "Ship-part Ship-part--warp");
+      check(n.part.warp(true), "Ship-part Ship-part--warp");
+      check(n.part.warp(false), "Ship-part");
+      check(n.part.warp(0), "Ship-part");
+      check(n.part.warp(1), "Ship-part Ship-part--warp");
+      check(n.part.warp(null), "Ship-part");
+      check(n.part.warp(undefined), "Ship-part");
+      check(n.part.warp("klingon"), "Ship-part Ship-part--warp");
+      check(n.part.warp(""), "Ship-part");
 
-      // Test cls resolver (verbose version):
-      expect(n.part.warp.cls /*--------*/).toBe("Ship-part Ship-part--warp");
-      expect(n.part.warp().cls /*------*/).toBe("Ship-part Ship-part--warp");
-      expect(n.part.warp(true).cls /*--*/).toBe("Ship-part Ship-part--warp");
-      expect(n.part.warp(false).cls /*-*/).toBe("Ship-part");
-      expect(n.part.warp(0).cls /*-----*/).toBe("Ship-part");
-      expect(n.part.warp(1).cls /*-----*/).toBe("Ship-part Ship-part--warp");
-      expect(n.part.warp(null).cls /*--*/).toBe("Ship-part");
-      expect(n.part.warp(undefined).cls).toBe("Ship-part");
-      expect(n.part.warp("klingon").cls).toBe("Ship-part Ship-part--warp");
-      expect(n.part.warp("").cls /*----*/).toBe("Ship-part");
+      check(n.part.adrift, "Ship-part Ship-part--adrift");
+      check(n.part.adrift(), "Ship-part Ship-part--adrift");
+      check(n.part.adrift(true), "Ship-part Ship-part--adrift");
+      check(n.part.adrift(false), "Ship-part");
+      check(n.part.adrift(0), "Ship-part");
+      check(n.part.adrift(1), "Ship-part Ship-part--adrift");
+      check(n.part.adrift(null), "Ship-part");
+      check(n.part.adrift(undefined), "Ship-part");
+      check(n.part.adrift("klingon"), "Ship-part Ship-part--adrift");
+      check(n.part.adrift(""), "Ship-part");
 
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n.part.warp}`).toThrow();
-      expect(() => `${n.part.warp()}`).toThrow();
-      expect(() => `${n.part.warp(true)}`).toThrow();
-      expect(() => `${n.part.warp(false)}`).toThrow();
-      expect(() => `${n.part.warp(0)}`).toThrow();
-      expect(() => `${n.part.warp(1)}`).toThrow();
-      expect(() => `${n.part.warp(null)}`).toThrow();
-      expect(() => `${n.part.warp(undefined)}`).toThrow();
-      expect(() => `${n.part.warp("klingon")}`).toThrow();
-      expect(() => `${n.part.warp("")}`).toThrow();
+      check(n.Ship.part.warp, "Ship-part Ship-part--warp");
+      check(n.Ship.part.warp(), "Ship-part Ship-part--warp");
+      check(n.Ship.part.warp(true), "Ship-part Ship-part--warp");
+      check(n.Ship.part.warp(false), "Ship-part");
 
-      expect(n.part.adrift.c /*----------*/).toBe(
-        "Ship-part Ship-part--adrift"
-      );
-      expect(n.part.adrift().c /*--------*/).toBe(
-        "Ship-part Ship-part--adrift"
-      );
-      expect(n.part.adrift(true).c /*----*/).toBe(
-        "Ship-part Ship-part--adrift"
-      );
-      expect(n.part.adrift(false).c /*---*/).toBe("Ship-part");
-      expect(n.part.adrift(0).c /*-------*/).toBe("Ship-part");
-      expect(n.part.adrift(1).c /*-------*/).toBe(
-        "Ship-part Ship-part--adrift"
-      );
-      expect(n.part.adrift(null).c /*----*/).toBe("Ship-part");
-      expect(n.part.adrift(undefined).c).toBe("Ship-part");
-      expect(n.part.adrift("klingon").c).toBe("Ship-part Ship-part--adrift");
-      expect(n.part.adrift("").c /*------*/).toBe("Ship-part");
-
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n.part.adrift}`).toThrow();
-      expect(() => `${n.part.adrift()}`).toThrow();
-      expect(() => `${n.part.adrift(true)}`).toThrow();
-      expect(() => `${n.part.adrift(false)}`).toThrow();
-      expect(() => `${n.part.adrift(0)}`).toThrow();
-      expect(() => `${n.part.adrift(1)}`).toThrow();
-      expect(() => `${n.part.adrift(null)}`).toThrow();
-      expect(() => `${n.part.adrift(undefined)}`).toThrow();
-      expect(() => `${n.part.adrift("klingon")}`).toThrow();
-      expect(() => `${n.part.adrift("")}`).toThrow();
-
-      expect(n.Ship.part.warp.c /*-------*/).toBe("Ship-part Ship-part--warp");
-      expect(n.Ship.part.warp().c /*-----*/).toBe("Ship-part Ship-part--warp");
-      expect(n.Ship.part.warp(true).c /*-*/).toBe("Ship-part Ship-part--warp");
-      expect(n.Ship.part.warp(false).c).toBe("Ship-part");
-
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n.Ship.part.warp}`).toThrow();
-      expect(() => `${n.Ship.part.warp()}`).toThrow();
-      expect(() => `${n.Ship.part.warp(true)}`).toThrow();
-      expect(() => `${n.Ship.part.warp(false)}`).toThrow();
-
-      expect(n.Ship.part.adrift.c /*-----*/).toBe(
-        "Ship-part Ship-part--adrift"
-      );
-      expect(n.Ship.part.adrift().c /*---*/).toBe(
-        "Ship-part Ship-part--adrift"
-      );
-      expect(n.Ship.part.adrift(true).c).toBe("Ship-part Ship-part--adrift");
-      expect(n.Ship.part.adrift(false).c).toBe("Ship-part");
-
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n.Ship.part.adrift}`).toThrow();
-      expect(() => `${n.Ship.part.adrift()}`).toThrow();
-      expect(() => `${n.Ship.part.adrift(true)}`).toThrow();
-      expect(() => `${n.Ship.part.adrift(false)}`).toThrow();
+      check(n.Ship.part.adrift, "Ship-part Ship-part--adrift");
+      check(n.Ship.part.adrift(), "Ship-part Ship-part--adrift");
+      check(n.Ship.part.adrift(true), "Ship-part Ship-part--adrift");
+      check(n.Ship.part.adrift(false), "Ship-part");
     });
 
     test("conditional class composition :: base class", () => {
-      expect(n(n.warp, n.adrift).c).toBe("Ship Ship--warp Ship--adrift");
+      check(n(n.warp, n.adrift), "Ship Ship--warp Ship--adrift");
 
       // Equivalent to above:
-      expect(n(n.warp(), n.adrift()).c).toBe("Ship Ship--warp Ship--adrift");
+      check(n(n.warp(), n.adrift()), "Ship Ship--warp Ship--adrift");
 
       // Invalid due to string being passed directly:
       expect(
@@ -378,41 +232,27 @@ describe("NSS", () => {
           ).c
       ).toThrow();
 
-      expect(n(n.warp(true), n.adrift(true)).c).toBe(
-        "Ship Ship--warp Ship--adrift"
-      );
-      expect(n(n.warp(true), n.adrift(false)).c).toBe("Ship Ship--warp");
-      expect(n(n.warp(false), n.adrift(false)).c).toBe("Ship");
-      expect(n(n.warp(0), n.adrift("at space")).c).toBe("Ship Ship--adrift");
-
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n(n.warp(true), n.adrift(true))}`).toThrow();
-      expect(() => `${n(n.warp(true), n.adrift(false))}`).toThrow();
-      expect(() => `${n(n.warp(false), n.adrift(false))}`).toThrow();
-      expect(() => `${n(n.warp(0), n.adrift("at space"))}`).toThrow();
+      check(n(n.warp(true), n.adrift(true)), "Ship Ship--warp Ship--adrift");
+      check(n(n.warp(true), n.adrift(false)), "Ship Ship--warp");
+      check(n(n.warp(false), n.adrift(false)), "Ship");
+      check(n(n.warp(0), n.adrift("at space")), "Ship Ship--adrift");
 
       // Equivalent to above (object composition):
-      expect(n({ warp: true, adrift: true }).c).toBe(
-        "Ship Ship--warp Ship--adrift"
-      );
-      expect(n({ warp: true, adrift: false }).c).toBe("Ship Ship--warp");
-      expect(n({ warp: false, adrift: false }).c).toBe("Ship");
-      expect(n({ warp: 0, adrift: "at space" }).c).toBe("Ship Ship--adrift");
-
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n({ warp: true, adrift: true })}`).toThrow();
-      expect(() => `${n({ warp: true, adrift: false })}`).toThrow();
-      expect(() => `${n({ warp: false, adrift: false })}`).toThrow();
-      expect(() => `${n({ warp: 0, adrift: "at space" })}`).toThrow();
+      check(n({ warp: true, adrift: true }), "Ship Ship--warp Ship--adrift");
+      check(n({ warp: true, adrift: false }), "Ship Ship--warp");
+      check(n({ warp: false, adrift: false }), "Ship");
+      check(n({ warp: 0, adrift: "at space" }), "Ship Ship--adrift");
     });
 
     test("conditional class composition :: element class", () => {
-      expect(n.part(n.warp, n.adrift).c).toBe(
+      check(
+        n.part(n.warp, n.adrift),
         "Ship-part Ship-part--warp Ship-part--adrift"
       );
 
       // Equivalent to above:
-      expect(n.part(n.warp(), n.adrift()).c).toBe(
+      check(
+        n.part(n.warp(), n.adrift()),
         "Ship-part Ship-part--warp Ship-part--adrift"
       );
 
@@ -425,69 +265,54 @@ describe("NSS", () => {
           ).c
       ).toThrow();
 
-      expect(n.part(n.warp(true), n.adrift(true)).c).toBe(
+      check(
+        n.part(n.warp(true), n.adrift(true)),
         "Ship-part Ship-part--warp Ship-part--adrift"
       );
-      expect(n.part(n.warp(true), n.adrift(false)).c).toBe(
-        "Ship-part Ship-part--warp"
-      );
-      expect(n.part(n.warp(false), n.adrift(false)).c).toBe("Ship-part");
-      expect(n.part(n.warp(0), n.adrift("at space")).c).toBe(
+      check(n.part(n.warp(true), n.adrift(false)), "Ship-part Ship-part--warp");
+      check(n.part(n.warp(false), n.adrift(false)), "Ship-part");
+      check(
+        n.part(n.warp(0), n.adrift("at space")),
         "Ship-part Ship-part--adrift"
       );
-
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n.part(n.warp(true), n.adrift(true))}`).toThrow();
-      expect(() => `${n.part(n.warp(true), n.adrift(false))}`).toThrow();
-      expect(() => `${n.part(n.warp(false), n.adrift(false))}`).toThrow();
-      expect(() => `${n.part(n.warp(0), n.adrift("at space"))}`).toThrow();
 
       // Equivalent to above (object composition):
-      expect(n.part({ warp: true, adrift: true }).c).toBe(
+      check(
+        n.part({ warp: true, adrift: true }),
         "Ship-part Ship-part--warp Ship-part--adrift"
       );
-      expect(n.part({ warp: true, adrift: false }).c).toBe(
-        "Ship-part Ship-part--warp"
-      );
-      expect(n.part({ warp: false, adrift: false }).c).toBe("Ship-part");
-      expect(n.part({ warp: 0, adrift: "at space" }).c).toBe(
+      check(n.part({ warp: true, adrift: false }), "Ship-part Ship-part--warp");
+      check(n.part({ warp: false, adrift: false }), "Ship-part");
+      check(
+        n.part({ warp: 0, adrift: "at space" }),
         "Ship-part Ship-part--adrift"
       );
-
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n.part({ warp: true, adrift: true })}`).toThrow();
-      expect(() => `${n.part({ warp: true, adrift: false })}`).toThrow();
-      expect(() => `${n.part({ warp: false, adrift: false })}`).toThrow();
-      expect(() => `${n.part({ warp: 0, adrift: "at space" })}`).toThrow();
     });
 
     test("chained conditionals :: base class", () => {
-      expect(n.warp().adrift().c).toBe("Ship Ship--warp Ship--adrift");
+      check(n.warp().adrift(), "Ship Ship--warp Ship--adrift");
 
       // Equivalent to above (but shouldn't generally be used):
-      expect(n.warp().adrift.c).toBe("Ship Ship--warp Ship--adrift");
+      check(n.warp().adrift, "Ship Ship--warp Ship--adrift");
 
-      expect(n.warp(true).adrift(true).c).toBe("Ship Ship--warp Ship--adrift");
-      expect(n.warp(true).adrift(false).c).toBe("Ship Ship--warp");
-      expect(n.warp(false).adrift(false).c).toBe("Ship");
-      expect(n.warp(0).adrift("at space").c).toBe("Ship Ship--adrift");
+      check(n.warp(true).adrift(true), "Ship Ship--warp Ship--adrift");
+      check(n.warp(true).adrift(false), "Ship Ship--warp");
+      check(n.warp(false).adrift(false), "Ship");
+      check(n.warp(0).adrift("at space"), "Ship Ship--adrift");
 
       // Triple chain: false cond does not negate true cond
       // TODO Consider fixing this in the future
-      expect(n.warp(true).adrift(true).warp(false).c).toBe(
+      check(
+        n.warp(true).adrift(true).warp(false),
         "Ship Ship--warp Ship--adrift"
       );
       // Triple chain: duplicate cond results in duplicate class
       // TODO Consider fixing this in the future
-      expect(n.warp(true).adrift(true).warp(true).c).toBe(
+      check(
+        n.warp(true).adrift(true).warp(true),
         "Ship Ship--warp Ship--adrift Ship--warp"
       );
 
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n.warp(true).adrift(true)}`).toThrow();
-      expect(() => `${n.warp(true).adrift(false)}`).toThrow();
-      expect(() => `${n.warp(false).adrift(false)}`).toThrow();
-      expect(() => `${n.warp(0).adrift("at space")}`).toThrow();
       // Should throw: Chaining should only be available off top-level n object, not n():
       // TODO Consider fixing this in the future
       // @ts-ignore
@@ -521,34 +346,35 @@ describe("NSS", () => {
     });
 
     test("chained conditionals :: element class", () => {
-      expect(n.part.warp().adrift().c).toBe(
+      check(
+        n.part.warp().adrift(),
         "Ship-part Ship-part--warp Ship-part--adrift"
       );
 
       // Equivalent to above (but shouldn't generally be used):
-      expect(n.part.warp().adrift.c).toBe(
+      check(
+        n.part.warp().adrift,
         "Ship-part Ship-part--warp Ship-part--adrift"
       );
 
-      expect(n.part.warp(true).adrift(true).c).toBe(
+      check(
+        n.part.warp(true).adrift(true),
         "Ship-part Ship-part--warp Ship-part--adrift"
       );
-      expect(n.part.warp(true).adrift(false).c).toBe(
-        "Ship-part Ship-part--warp"
-      );
-      expect(n.part.warp(false).adrift(false).c).toBe("Ship-part");
-      expect(n.part.warp(0).adrift("at space").c).toBe(
-        "Ship-part Ship-part--adrift"
-      );
+      check(n.part.warp(true).adrift(false), "Ship-part Ship-part--warp");
+      check(n.part.warp(false).adrift(false), "Ship-part");
+      check(n.part.warp(0).adrift("at space"), "Ship-part Ship-part--adrift");
 
       // Triple chain: false cond does not negate true cond
       // TODO Consider fixing this in the future
-      expect(n.part.warp(true).adrift(true).warp(false).c).toBe(
+      check(
+        n.part.warp(true).adrift(true).warp(false),
         "Ship-part Ship-part--warp Ship-part--adrift"
       );
       // Triple chain: duplicate cond results in duplicate class
       // TODO Consider fixing this in the future
-      expect(n.part.warp(true).adrift(true).warp(true).c).toBe(
+      check(
+        n.part.warp(true).adrift(true).warp(true),
         "Ship-part Ship-part--warp Ship-part--adrift Ship-part--warp"
       );
 
@@ -625,145 +451,138 @@ describe("NSS", () => {
     "class mapping :: %s",
     (_, Base, Elem, Cond, BaseMapped, ElemMapped, CondMapped) => {
       function verifyBasicForms(n: any) {
-        expect(n.c).toBe("Ship abc");
-        expect(n().c).toBe("Ship abc");
+        check(n, "Ship abc");
+        check(n(), "Ship abc");
 
-        expect(n.engine.c).toBe("Ship-engine def");
-        expect(n.engine().c).toBe("Ship-engine def");
+        check(n.engine, "Ship-engine def");
+        check(n.engine(), "Ship-engine def");
 
-        expect(n.part.c).toBe("Ship-part ghi");
-        expect(n.part().c).toBe("Ship-part ghi");
+        check(n.part, "Ship-part ghi");
+        check(n.part(), "Ship-part ghi");
 
-        expect(n.warp.c /*-------------*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.warp().c /*-----------*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.warp(true).c /*-------*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.warp(false).c /*------*/).toBe("Ship abc");
+        check(n.warp, "Ship abc Ship--warp jkl");
+        check(n.warp(), "Ship abc Ship--warp jkl");
+        check(n.warp(true), "Ship abc Ship--warp jkl");
+        check(n.warp(false), "Ship abc");
 
-        expect(n.part.warp.c /*--------*/).toBe(
-          "Ship-part ghi Ship-part--warp jkl"
-        );
-        expect(n.part.warp().c /*------*/).toBe(
-          "Ship-part ghi Ship-part--warp jkl"
-        );
-        expect(n.part.warp(true).c /*--*/).toBe(
-          "Ship-part ghi Ship-part--warp jkl"
-        );
-        expect(n.part.warp(false).c /*-*/).toBe("Ship-part ghi");
+        check(n.part.warp, "Ship-part ghi Ship-part--warp jkl");
+        check(n.part.warp(), "Ship-part ghi Ship-part--warp jkl");
+        check(n.part.warp(true), "Ship-part ghi Ship-part--warp jkl");
+        check(n.part.warp(false), "Ship-part ghi");
 
-        expect(n.Ship.c).toBe("Ship abc");
-        expect(n.Ship().c).toBe("Ship abc");
+        check(n.Ship, "Ship abc");
+        check(n.Ship(), "Ship abc");
 
-        expect(n.Ship.engine.c).toBe("Ship-engine def");
-        expect(n.Ship.engine().c).toBe("Ship-engine def");
+        check(n.Ship.engine, "Ship-engine def");
+        check(n.Ship.engine(), "Ship-engine def");
 
-        expect(n.Ship.part.c).toBe("Ship-part ghi");
-        expect(n.Ship.part().c).toBe("Ship-part ghi");
+        check(n.Ship.part, "Ship-part ghi");
+        check(n.Ship.part(), "Ship-part ghi");
 
-        expect(n.Ship.warp.c /*--------*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.Ship.warp().c /*------*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.Ship.warp(true).c /*--*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.Ship.warp(false).c /*-*/).toBe("Ship abc");
+        check(n.Ship.warp, "Ship abc Ship--warp jkl");
+        check(n.Ship.warp(), "Ship abc Ship--warp jkl");
+        check(n.Ship.warp(true), "Ship abc Ship--warp jkl");
+        check(n.Ship.warp(false), "Ship abc");
 
-        expect(n.Ship.part.warp.c).toBe("Ship-part ghi Ship-part--warp jkl");
-        expect(n.Ship.part.warp().c).toBe("Ship-part ghi Ship-part--warp jkl");
-        expect(n.Ship.part.warp(true).c).toBe(
-          "Ship-part ghi Ship-part--warp jkl"
-        );
-        expect(n.Ship.part.warp(false).c).toBe("Ship-part ghi");
+        check(n.Ship.part.warp, "Ship-part ghi Ship-part--warp jkl");
+        check(n.Ship.part.warp(), "Ship-part ghi Ship-part--warp jkl");
+        check(n.Ship.part.warp(true), "Ship-part ghi Ship-part--warp jkl");
+        check(n.Ship.part.warp(false), "Ship-part ghi");
       }
 
       function verifyCompositionalForms(n: any) {
-        expect(n(n.warp, n.adrift).c).toBe(
-          "Ship abc Ship--warp jkl Ship--adrift mno"
-        );
-        expect(n(n.warp(), n.adrift()).c).toBe(
+        check(n(n.warp, n.adrift), "Ship abc Ship--warp jkl Ship--adrift mno");
+        check(
+          n(n.warp(), n.adrift()),
           "Ship abc Ship--warp jkl Ship--adrift mno"
         );
 
-        expect(n(n.warp(true), n.adrift(true)).c).toBe(
+        check(
+          n(n.warp(true), n.adrift(true)),
           "Ship abc Ship--warp jkl Ship--adrift mno"
         );
-        expect(n(n.warp(true), n.adrift(false)).c).toBe(
-          "Ship abc Ship--warp jkl"
-        );
-        expect(n(n.warp(false), n.adrift(false)).c).toBe("Ship abc");
-        expect(n(n.warp(0), n.adrift("at space")).c).toBe(
-          "Ship abc Ship--adrift mno"
-        );
+        check(n(n.warp(true), n.adrift(false)), "Ship abc Ship--warp jkl");
+        check(n(n.warp(false), n.adrift(false)), "Ship abc");
+        check(n(n.warp(0), n.adrift("at space")), "Ship abc Ship--adrift mno");
 
-        expect(n({ warp: true, adrift: true }).c).toBe(
+        check(
+          n({ warp: true, adrift: true }),
           "Ship abc Ship--warp jkl Ship--adrift mno"
         );
-        expect(n({ warp: true, adrift: false }).c).toBe(
-          "Ship abc Ship--warp jkl"
-        );
-        expect(n({ warp: false, adrift: false }).c).toBe("Ship abc");
-        expect(n({ warp: 0, adrift: "at space" }).c).toBe(
-          "Ship abc Ship--adrift mno"
-        );
+        check(n({ warp: true, adrift: false }), "Ship abc Ship--warp jkl");
+        check(n({ warp: false, adrift: false }), "Ship abc");
+        check(n({ warp: 0, adrift: "at space" }), "Ship abc Ship--adrift mno");
 
-        expect(n.part(n.warp, n.adrift).c).toBe(
+        check(
+          n.part(n.warp, n.adrift),
           "Ship-part ghi Ship-part--warp jkl Ship-part--adrift mno"
         );
-        expect(n.part(n.warp(), n.adrift()).c).toBe(
+        check(
+          n.part(n.warp(), n.adrift()),
           "Ship-part ghi Ship-part--warp jkl Ship-part--adrift mno"
         );
 
-        expect(n.part(n.warp(true), n.adrift(true)).c).toBe(
+        check(
+          n.part(n.warp(true), n.adrift(true)),
           "Ship-part ghi Ship-part--warp jkl Ship-part--adrift mno"
         );
-        expect(n.part(n.warp(true), n.adrift(false)).c).toBe(
+        check(
+          n.part(n.warp(true), n.adrift(false)),
           "Ship-part ghi Ship-part--warp jkl"
         );
-        expect(n.part(n.warp(false), n.adrift(false)).c).toBe("Ship-part ghi");
-        expect(n.part(n.warp(0), n.adrift("at space")).c).toBe(
+        check(n.part(n.warp(false), n.adrift(false)), "Ship-part ghi");
+        check(
+          n.part(n.warp(0), n.adrift("at space")),
           "Ship-part ghi Ship-part--adrift mno"
         );
 
-        expect(n.part({ warp: true, adrift: true }).c).toBe(
+        check(
+          n.part({ warp: true, adrift: true }),
           "Ship-part ghi Ship-part--warp jkl Ship-part--adrift mno"
         );
-        expect(n.part({ warp: true, adrift: false }).c).toBe(
+        check(
+          n.part({ warp: true, adrift: false }),
           "Ship-part ghi Ship-part--warp jkl"
         );
-        expect(n.part({ warp: false, adrift: false }).c).toBe("Ship-part ghi");
-        expect(n.part({ warp: 0, adrift: "at space" }).c).toBe(
+        check(n.part({ warp: false, adrift: false }), "Ship-part ghi");
+        check(
+          n.part({ warp: 0, adrift: "at space" }),
           "Ship-part ghi Ship-part--adrift mno"
         );
       }
 
       function verifyChainedForms(n: any) {
-        expect(n.warp().adrift().c).toBe(
-          "Ship abc Ship--warp jkl Ship--adrift mno"
-        );
+        check(n.warp().adrift(), "Ship abc Ship--warp jkl Ship--adrift mno");
         // Equivalent to above (but shouldn't generally be used):
-        expect(n.warp().adrift.c).toBe(
+        check(n.warp().adrift, "Ship abc Ship--warp jkl Ship--adrift mno");
+        check(
+          n.warp(true).adrift(true),
           "Ship abc Ship--warp jkl Ship--adrift mno"
         );
-        expect(n.warp(true).adrift(true).c).toBe(
-          "Ship abc Ship--warp jkl Ship--adrift mno"
-        );
-        expect(n.warp(true).adrift(false).c).toBe("Ship abc Ship--warp jkl");
-        expect(n.warp(false).adrift(false).c).toBe("Ship abc");
-        expect(n.warp(0).adrift("at space").c).toBe(
-          "Ship abc Ship--adrift mno"
-        );
+        check(n.warp(true).adrift(false), "Ship abc Ship--warp jkl");
+        check(n.warp(false).adrift(false), "Ship abc");
+        check(n.warp(0).adrift("at space"), "Ship abc Ship--adrift mno");
 
-        expect(n.part.warp().adrift().c).toBe(
+        check(
+          n.part.warp().adrift(),
           "Ship-part ghi Ship-part--warp jkl Ship-part--adrift mno"
         );
         // Equivalent to above (but shouldn't generally be used):
-        expect(n.part.warp().adrift.c).toBe(
+        check(
+          n.part.warp().adrift,
           "Ship-part ghi Ship-part--warp jkl Ship-part--adrift mno"
         );
-        expect(n.part.warp(true).adrift(true).c).toBe(
+        check(
+          n.part.warp(true).adrift(true),
           "Ship-part ghi Ship-part--warp jkl Ship-part--adrift mno"
         );
-        expect(n.part.warp(true).adrift(false).c).toBe(
+        check(
+          n.part.warp(true).adrift(false),
           "Ship-part ghi Ship-part--warp jkl"
         );
-        expect(n.part.warp(false).adrift(false).c).toBe("Ship-part ghi");
-        expect(n.part.warp(0).adrift("at space").c).toBe(
+        check(n.part.warp(false).adrift(false), "Ship-part ghi");
+        check(
+          n.part.warp(0).adrift("at space"),
           "Ship-part ghi Ship-part--adrift mno"
         );
       }
@@ -914,138 +733,66 @@ describe("NSS", () => {
 
     test("base class", () => {
       // Test cls resolver (short version):
-      expect(n.props().c).toBe("Ship");
-      expect(n.props(["warp"]).c).toBe("Ship Ship--warp");
-      expect(n.props({ warp: true }).c).toBe("Ship Ship--warp");
-      fuzz((val) => expect(n.props({ warp: val }).c).toBe("Ship"));
+      check(n.props(), "Ship");
+      check(n.props(["warp"]), "Ship Ship--warp");
+      check(n.props({ warp: true }), "Ship Ship--warp");
+      fuzz((val) => check(n.props({ warp: val }), "Ship"));
       expect(() => n.props("warp" as unknown as string[]).c).toThrow();
 
-      // Test cls resolver (verbose version):
-      expect(n.props().cls).toBe("Ship");
-      expect(n.props(["warp"]).cls).toBe("Ship Ship--warp");
-      expect(n.props({ warp: true }).cls).toBe("Ship Ship--warp");
-      fuzz((val) => expect(n.props({ warp: val }).cls).toBe("Ship"));
-      expect(() => n.props("warp" as unknown as string[]).cls).toThrow();
-
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n.props()}`).toThrow();
-      expect(() => `${n.props(["warp"])}`).toThrow();
-      expect(() => `${n.props({ warp: true })}`).toThrow();
-      fuzz((val) => expect(() => `${n.props({ warp: val })}`).toThrow());
-
       // Allow optional explicit specification of base name:
-      expect(n.Ship.props().c).toBe("Ship");
-      expect(n.Ship.props(["warp"]).c).toBe("Ship Ship--warp");
-      expect(n.Ship.props({ warp: true }).c).toBe("Ship Ship--warp");
-      fuzz((val) => expect(n.Ship.props({ warp: val }).c).toBe("Ship"));
+      check(n.Ship.props(), "Ship");
+      check(n.Ship.props(["warp"]), "Ship Ship--warp");
+      check(n.Ship.props({ warp: true }), "Ship Ship--warp");
+      fuzz((val) => check(n.Ship.props({ warp: val }), "Ship"));
       expect(() => n.Ship.props("warp" as unknown as string[]).c).toThrow();
-      //
-      expect(() => `${n.Ship.props()}`).toThrow();
-      expect(() => `${n.Ship.props(["warp"])}`).toThrow();
-      expect(() => `${n.Ship.props({ warp: true })}`).toThrow();
-      fuzz((val) => expect(() => `${n.Ship.props({ warp: val })}`).toThrow());
     });
 
     test("element classes", () => {
       // Test cls resolver (short version):
-      expect(n.engine.props().c).toBe("Ship-engine");
-      expect(n.engine.props(["warp"]).c).toBe("Ship-engine Ship-engine--warp");
-      expect(n.engine.props({ warp: true }).c).toBe(
-        "Ship-engine Ship-engine--warp"
-      );
-      fuzz((val) =>
-        expect(n.engine.props({ warp: val }).c).toBe("Ship-engine")
-      );
+      check(n.engine.props(), "Ship-engine");
+      check(n.engine.props(["warp"]), "Ship-engine Ship-engine--warp");
+      check(n.engine.props({ warp: true }), "Ship-engine Ship-engine--warp");
+      fuzz((val) => check(n.engine.props({ warp: val }), "Ship-engine"));
       expect(() => n.engine("warp" as unknown as string[]).c).toThrow();
-
-      // Test cls resolver (verbose version):
-      expect(n.engine.props().cls).toBe("Ship-engine");
-      expect(n.engine.props(["warp"]).cls).toBe(
-        "Ship-engine Ship-engine--warp"
-      );
-      expect(n.engine.props({ warp: true }).cls).toBe(
-        "Ship-engine Ship-engine--warp"
-      );
-      fuzz((val) =>
-        expect(n.engine.props({ warp: val }).cls).toBe("Ship-engine")
-      );
       expect(() => n.engine.props("warp" as unknown as string[]).cls).toThrow();
 
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n.engine.props()}`).toThrow();
-      expect(() => `${n.engine.props(["warp"])}`).toThrow();
-      expect(() => `${n.engine.props({ warp: true })}`).toThrow();
-      fuzz((val) => expect(() => `${n.engine.props({ warp: val })}`).toThrow());
-
-      expect(n.part.props().c).toBe("Ship-part");
-      expect(n.part.props(["adrift"]).c).toBe("Ship-part Ship-part--adrift");
-      expect(n.part.props({ adrift: true }).c).toBe(
-        "Ship-part Ship-part--adrift"
-      );
-      fuzz((val) => expect(n.part.props({ adrift: val }).c).toBe("Ship-part"));
+      check(n.part.props(), "Ship-part");
+      check(n.part.props(["adrift"]), "Ship-part Ship-part--adrift");
+      check(n.part.props({ adrift: true }), "Ship-part Ship-part--adrift");
+      fuzz((val) => check(n.part.props({ adrift: val }), "Ship-part"));
       expect(() => n.part.props("adrift" as unknown as string[]).c).toThrow();
 
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n.part.props()}`).toThrow();
-      expect(() => `${n.part.props(["adrift"])}`).toThrow();
-      expect(() => `${n.part.props({ adrift: true })}`).toThrow();
-      fuzz((val) => expect(() => `${n.part.props({ adrift: val })}`).toThrow());
-
-      expect(n.Ship.engine.props().c).toBe("Ship-engine");
-      expect(n.Ship.engine.props(["warp"]).c).toBe(
+      check(n.Ship.engine.props(), "Ship-engine");
+      check(n.Ship.engine.props(["warp"]), "Ship-engine Ship-engine--warp");
+      check(
+        n.Ship.engine.props({ warp: true }),
         "Ship-engine Ship-engine--warp"
       );
-      expect(n.Ship.engine.props({ warp: true }).c).toBe(
-        "Ship-engine Ship-engine--warp"
-      );
-      fuzz((val) =>
-        expect(n.Ship.engine.props({ warp: val }).c).toBe("Ship-engine")
-      );
+      fuzz((val) => check(n.Ship.engine.props({ warp: val }), "Ship-engine"));
       expect(
         () => n.Ship.engine.props("warp" as unknown as string[]).c
       ).toThrow();
 
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n.Ship.engine.props()}`).toThrow();
-      expect(() => `${n.Ship.engine.props(["warp"])}`).toThrow();
-      expect(() => `${n.Ship.engine.props({ warp: true })}`).toThrow();
-      fuzz((val) =>
-        expect(() => `${n.Ship.engine.props({ warp: val })}`).toThrow()
-      );
-
-      expect(n.Ship.part.props().c).toBe("Ship-part");
-      expect(n.Ship.part.props(["adrift"]).c).toBe(
-        "Ship-part Ship-part--adrift"
-      );
-      expect(n.Ship.part.props({ adrift: true }).c).toBe(
-        "Ship-part Ship-part--adrift"
-      );
+      check(n.Ship.part.props(), "Ship-part");
+      check(n.Ship.part.props(["adrift"]), "Ship-part Ship-part--adrift");
+      check(n.Ship.part.props({ adrift: true }), "Ship-part Ship-part--adrift");
       fuzz((val) =>
         expect(n.Ship.part.props({ adrift: val }).c).toBe("Ship-part")
       );
       expect(
         () => n.Ship.part.props("adrift" as unknown as string[]).c
       ).toThrow();
-
-      // Should throw: NSS expressions should never be cast directly to string.
-      expect(() => `${n.Ship.part}`).toThrow();
-      expect(() => `${n.Ship.part.props()}`).toThrow();
-      expect(() => `${n.Ship.part.props(["adrift"])}`).toThrow();
-      expect(() => `${n.Ship.part.props({ adrift: true })}`).toThrow();
-      fuzz((val) =>
-        expect(() => `${n.Ship.part.props({ adrift: val })}`).toThrow()
-      );
     });
 
     test("case-insensitive (default)", () => {
-      expect(n.props(["Warp"]).c).toBe("Ship Ship--warp");
-      expect(n.props({ Warp: true }).c).toBe("Ship Ship--warp");
+      check(n.props(["Warp"]), "Ship Ship--warp");
+      check(n.props({ Warp: true }), "Ship Ship--warp");
     });
 
     test("case-sensitive", () => {
       nss.configure({ caseSensitiveProps: true });
-      expect(n.props(["Warp"]).c).toBe("Ship");
-      expect(n.props({ Warp: true }).c).toBe("Ship");
+      check(n.props(["Warp"]), "Ship");
+      check(n.props({ Warp: true }), "Ship");
       nss.configure({ caseSensitiveProps: false });
     });
   });
@@ -1081,28 +828,28 @@ describe("NSS", () => {
 
         expect((n as unknown as { Ship: unknown }).Ship).toBeUndefined();
 
-        expect(n.c).toBe("");
-        expect(n.engine.c).toBe("engine def");
-        expect(n.part.c).toBe("part ghi");
-        expect(n.warp.c /*-------------*/).toBe("warp jkl");
-        expect(n.warp().c /*-----------*/).toBe("warp jkl");
-        expect(n.warp(true).c /*-------*/).toBe("warp jkl");
-        expect(n.warp(false).c /*------*/).toBe("");
-        expect(n.part.warp.c /*--------*/).toBe("part ghi part--warp jkl");
-        expect(n.part.warp().c /*------*/).toBe("part ghi part--warp jkl");
-        expect(n.part.warp(true).c /*--*/).toBe("part ghi part--warp jkl");
-        expect(n.part.warp(false).c /*-*/).toBe("part ghi");
+        check(n, "");
+        check(n.engine, "engine def");
+        check(n.part, "part ghi");
+        check(n.warp, "warp jkl");
+        check(n.warp(), "warp jkl");
+        check(n.warp(true), "warp jkl");
+        check(n.warp(false), "");
+        check(n.part.warp, "part ghi part--warp jkl");
+        check(n.part.warp(), "part ghi part--warp jkl");
+        check(n.part.warp(true), "part ghi part--warp jkl");
+        check(n.part.warp(false), "part ghi");
 
-        expect(n.warp(true).adrift().c).toBe("warp jkl adrift mno");
-        expect(n.warp(true).adrift(false).c).toBe("warp jkl");
-        expect(n.adrift().warp("9").adrift(0).c).toBe("adrift mno warp jkl");
-        expect(n.part.warp(true).adrift().c).toBe(
+        check(n.warp(true).adrift(), "warp jkl adrift mno");
+        check(n.warp(true).adrift(false), "warp jkl");
+        check(n.adrift().warp("9").adrift(0), "adrift mno warp jkl");
+        check(
+          n.part.warp(true).adrift(),
           "part ghi part--warp jkl part--adrift mno"
         );
-        expect(n.part.warp(true).adrift(false).c).toBe(
-          "part ghi part--warp jkl"
-        );
-        expect(n.part.adrift().warp("9").adrift(0).c).toBe(
+        check(n.part.warp(true).adrift(false), "part ghi part--warp jkl");
+        check(
+          n.part.adrift().warp("9").adrift(0),
           "part ghi part--adrift mno part--warp jkl"
         );
       });
@@ -1114,31 +861,33 @@ describe("NSS", () => {
           CondMapped
         );
 
-        expect(n.c).toBe("Ship abc");
-        expect(n.Ship.c).toBe("Ship abc");
-        expect(n.warp.c /*---------------*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.warp().c /*-------------*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.adrift(true).c /*-------*/).toBe("Ship abc Ship--adrift mno");
-        expect(n.adrift(false).c /*------*/).toBe("Ship abc");
-        expect(n.Ship.warp.c /*----------*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.Ship.warp().c /*--------*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.Ship.adrift(true).c /*--*/).toBe("Ship abc Ship--adrift mno");
-        expect(n.Ship.adrift(false).c /*-*/).toBe("Ship abc");
+        check(n, "Ship abc");
+        check(n.Ship, "Ship abc");
+        check(n.warp, "Ship abc Ship--warp jkl");
+        check(n.warp(), "Ship abc Ship--warp jkl");
+        check(n.adrift(true), "Ship abc Ship--adrift mno");
+        check(n.adrift(false), "Ship abc");
+        check(n.Ship.warp, "Ship abc Ship--warp jkl");
+        check(n.Ship.warp(), "Ship abc Ship--warp jkl");
+        check(n.Ship.adrift(true), "Ship abc Ship--adrift mno");
+        check(n.Ship.adrift(false), "Ship abc");
 
-        expect(n.warp(true).adrift().c).toBe(
+        check(
+          n.warp(true).adrift(),
           "Ship abc Ship--warp jkl Ship--adrift mno"
         );
-        expect(n.warp(true).adrift(false).c).toBe("Ship abc Ship--warp jkl");
-        expect(n.adrift().warp("9").adrift(0).c).toBe(
+        check(n.warp(true).adrift(false), "Ship abc Ship--warp jkl");
+        check(
+          n.adrift().warp("9").adrift(0),
           "Ship abc Ship--adrift mno Ship--warp jkl"
         );
-        expect(n.Ship.warp(true).adrift().c).toBe(
+        check(
+          n.Ship.warp(true).adrift(),
           "Ship abc Ship--warp jkl Ship--adrift mno"
         );
-        expect(n.Ship.warp(true).adrift(false).c).toBe(
-          "Ship abc Ship--warp jkl"
-        );
-        expect(n.Ship.adrift().warp("9").adrift(0).c).toBe(
+        check(n.Ship.warp(true).adrift(false), "Ship abc Ship--warp jkl");
+        check(
+          n.Ship.adrift().warp("9").adrift(0),
           "Ship abc Ship--adrift mno Ship--warp jkl"
         );
       });
@@ -1150,31 +899,30 @@ describe("NSS", () => {
           // adrift omitted -- custom classes should be optional
         });
 
-        expect(n.c).toBe("Ship abc");
-        expect(n.Ship.c).toBe("Ship abc");
-        expect(n.warp.c /*---------------*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.warp().c /*-------------*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.adrift(true).c /*-------*/).toBe("Ship abc Ship--adrift");
-        expect(n.adrift(false).c /*------*/).toBe("Ship abc");
-        expect(n.Ship.warp.c /*----------*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.Ship.warp().c /*--------*/).toBe("Ship abc Ship--warp jkl");
-        expect(n.Ship.adrift(true).c /*--*/).toBe("Ship abc Ship--adrift");
-        expect(n.Ship.adrift(false).c /*-*/).toBe("Ship abc");
+        check(n, "Ship abc");
+        check(n.Ship, "Ship abc");
+        check(n.warp, "Ship abc Ship--warp jkl");
+        check(n.warp(), "Ship abc Ship--warp jkl");
+        check(n.adrift(true), "Ship abc Ship--adrift");
+        check(n.adrift(false), "Ship abc");
+        check(n.Ship.warp, "Ship abc Ship--warp jkl");
+        check(n.Ship.warp(), "Ship abc Ship--warp jkl");
+        check(n.Ship.adrift(true), "Ship abc Ship--adrift");
+        check(n.Ship.adrift(false), "Ship abc");
 
-        expect(n.warp(true).adrift().c).toBe(
-          "Ship abc Ship--warp jkl Ship--adrift"
-        );
-        expect(n.warp(true).adrift(false).c).toBe("Ship abc Ship--warp jkl");
-        expect(n.adrift().warp("9").adrift(0).c).toBe(
+        check(n.warp(true).adrift(), "Ship abc Ship--warp jkl Ship--adrift");
+        check(n.warp(true).adrift(false), "Ship abc Ship--warp jkl");
+        check(
+          n.adrift().warp("9").adrift(0),
           "Ship abc Ship--adrift Ship--warp jkl"
         );
-        expect(n.Ship.warp(true).adrift().c).toBe(
+        check(
+          n.Ship.warp(true).adrift(),
           "Ship abc Ship--warp jkl Ship--adrift"
         );
-        expect(n.Ship.warp(true).adrift(false).c).toBe(
-          "Ship abc Ship--warp jkl"
-        );
-        expect(n.Ship.adrift().warp("9").adrift(0).c).toBe(
+        check(n.Ship.warp(true).adrift(false), "Ship abc Ship--warp jkl");
+        check(
+          n.Ship.adrift().warp("9").adrift(0),
           "Ship abc Ship--adrift Ship--warp jkl"
         );
       });
@@ -1185,12 +933,12 @@ describe("NSS", () => {
           ElemMapped
         );
 
-        expect(n.c).toBe("Ship abc");
-        expect(n.engine.c).toBe("Ship-engine def");
-        expect(n.part.c).toBe("Ship-part ghi");
-        expect(n.Ship.c).toBe("Ship abc");
-        expect(n.Ship.engine.c).toBe("Ship-engine def");
-        expect(n.Ship.part.c).toBe("Ship-part ghi");
+        check(n, "Ship abc");
+        check(n.engine, "Ship-engine def");
+        check(n.part, "Ship-part ghi");
+        check(n.Ship, "Ship abc");
+        check(n.Ship.engine, "Ship-engine def");
+        check(n.Ship.part, "Ship-part ghi");
       });
 
       test("omit conditionals + class mappings via map object", () => {
@@ -1200,12 +948,12 @@ describe("NSS", () => {
           part: "ghi",
         });
 
-        expect(n.c).toBe("Ship abc");
-        expect(n.engine.c).toBe("Ship-engine def");
-        expect(n.part.c).toBe("Ship-part ghi");
-        expect(n.Ship.c).toBe("Ship abc");
-        expect(n.Ship.engine.c).toBe("Ship-engine def");
-        expect(n.Ship.part.c).toBe("Ship-part ghi");
+        check(n, "Ship abc");
+        check(n.engine, "Ship-engine def");
+        check(n.part, "Ship-part ghi");
+        check(n.Ship, "Ship abc");
+        check(n.Ship.engine, "Ship-engine def");
+        check(n.Ship.part, "Ship-part ghi");
       });
     }
   );
@@ -1225,51 +973,43 @@ describe("NSS", () => {
 
       let n = nss<typeof Base, typeof Elem, typeof Cond>(Base, Elem, Cond);
 
-      expect(n.c).toBe("Ship abc");
-      expect(n().c).toBe("Ship abc");
+      check(n, "Ship abc");
+      check(n(), "Ship abc");
 
-      expect(n.engine.c).toBe("Ship_engine def");
-      expect(n.engine().c).toBe("Ship_engine def");
+      check(n.engine, "Ship_engine def");
+      check(n.engine(), "Ship_engine def");
 
-      expect(n.part.c).toBe("Ship_part ghi");
-      expect(n.part().c).toBe("Ship_part ghi");
+      check(n.part, "Ship_part ghi");
+      check(n.part(), "Ship_part ghi");
 
-      expect(n.warp.c /*-------------*/).toBe("Ship abc Ship__warp jkl");
-      expect(n.warp().c /*-----------*/).toBe("Ship abc Ship__warp jkl");
-      expect(n.warp(true).c /*-------*/).toBe("Ship abc Ship__warp jkl");
-      expect(n.warp(false).c /*------*/).toBe("Ship abc");
+      check(n.warp, "Ship abc Ship__warp jkl");
+      check(n.warp(), "Ship abc Ship__warp jkl");
+      check(n.warp(true), "Ship abc Ship__warp jkl");
+      check(n.warp(false), "Ship abc");
 
-      expect(n.part.warp.c /*------*/).toBe(
-        "Ship_part ghi Ship_part__warp jkl"
-      );
-      expect(n.part.warp().c /*------*/).toBe(
-        "Ship_part ghi Ship_part__warp jkl"
-      );
-      expect(n.part.warp(true).c /*--*/).toBe(
-        "Ship_part ghi Ship_part__warp jkl"
-      );
-      expect(n.part.warp(false).c /*-*/).toBe("Ship_part ghi");
+      check(n.part.warp, "Ship_part ghi Ship_part__warp jkl");
+      check(n.part.warp(), "Ship_part ghi Ship_part__warp jkl");
+      check(n.part.warp(true), "Ship_part ghi Ship_part__warp jkl");
+      check(n.part.warp(false), "Ship_part ghi");
 
-      expect(n.Ship.c).toBe("Ship abc");
-      expect(n.Ship().c).toBe("Ship abc");
+      check(n.Ship, "Ship abc");
+      check(n.Ship(), "Ship abc");
 
-      expect(n.Ship.engine.c).toBe("Ship_engine def");
-      expect(n.Ship.engine().c).toBe("Ship_engine def");
+      check(n.Ship.engine, "Ship_engine def");
+      check(n.Ship.engine(), "Ship_engine def");
 
-      expect(n.Ship.part.c).toBe("Ship_part ghi");
-      expect(n.Ship.part().c).toBe("Ship_part ghi");
+      check(n.Ship.part, "Ship_part ghi");
+      check(n.Ship.part(), "Ship_part ghi");
 
-      expect(n.Ship.warp.c /*-------------*/).toBe("Ship abc Ship__warp jkl");
-      expect(n.Ship.warp().c /*-----------*/).toBe("Ship abc Ship__warp jkl");
-      expect(n.Ship.warp(true).c /*-------*/).toBe("Ship abc Ship__warp jkl");
-      expect(n.Ship.warp(false).c /*------*/).toBe("Ship abc");
+      check(n.Ship.warp, "Ship abc Ship__warp jkl");
+      check(n.Ship.warp(), "Ship abc Ship__warp jkl");
+      check(n.Ship.warp(true), "Ship abc Ship__warp jkl");
+      check(n.Ship.warp(false), "Ship abc");
 
-      expect(n.Ship.part.warp.c).toBe("Ship_part ghi Ship_part__warp jkl");
-      expect(n.Ship.part.warp().c).toBe("Ship_part ghi Ship_part__warp jkl");
-      expect(n.Ship.part.warp(true).c).toBe(
-        "Ship_part ghi Ship_part__warp jkl"
-      );
-      expect(n.Ship.part.warp(false).c).toBe("Ship_part ghi");
+      check(n.Ship.part.warp, "Ship_part ghi Ship_part__warp jkl");
+      check(n.Ship.part.warp(), "Ship_part ghi Ship_part__warp jkl");
+      check(n.Ship.part.warp(true), "Ship_part ghi Ship_part__warp jkl");
+      check(n.Ship.part.warp(false), "Ship_part ghi");
 
       nss.configure({
         separator: "..",
@@ -1277,53 +1017,43 @@ describe("NSS", () => {
 
       n = nss<typeof Base, typeof Elem, typeof Cond>(Base, Elem, Cond);
 
-      expect(n.c).toBe("Ship abc");
-      expect(n().c).toBe("Ship abc");
+      check(n, "Ship abc");
+      check(n(), "Ship abc");
 
-      expect(n.engine.c).toBe("Ship..engine def");
-      expect(n.engine().c).toBe("Ship..engine def");
+      check(n.engine, "Ship..engine def");
+      check(n.engine(), "Ship..engine def");
 
-      expect(n.part.c).toBe("Ship..part ghi");
-      expect(n.part().c).toBe("Ship..part ghi");
+      check(n.part, "Ship..part ghi");
+      check(n.part(), "Ship..part ghi");
 
-      expect(n.warp.c /*-------------*/).toBe("Ship abc Ship....warp jkl");
-      expect(n.warp().c /*-----------*/).toBe("Ship abc Ship....warp jkl");
-      expect(n.warp(true).c /*-------*/).toBe("Ship abc Ship....warp jkl");
-      expect(n.warp(false).c /*------*/).toBe("Ship abc");
+      check(n.warp, "Ship abc Ship....warp jkl");
+      check(n.warp(), "Ship abc Ship....warp jkl");
+      check(n.warp(true), "Ship abc Ship....warp jkl");
+      check(n.warp(false), "Ship abc");
 
-      expect(n.part.warp.c /*------*/).toBe(
-        "Ship..part ghi Ship..part....warp jkl"
-      );
-      expect(n.part.warp().c /*------*/).toBe(
-        "Ship..part ghi Ship..part....warp jkl"
-      );
-      expect(n.part.warp(true).c /*--*/).toBe(
-        "Ship..part ghi Ship..part....warp jkl"
-      );
-      expect(n.part.warp(false).c /*-*/).toBe("Ship..part ghi");
+      check(n.part.warp, "Ship..part ghi Ship..part....warp jkl");
+      check(n.part.warp(), "Ship..part ghi Ship..part....warp jkl");
+      check(n.part.warp(true), "Ship..part ghi Ship..part....warp jkl");
+      check(n.part.warp(false), "Ship..part ghi");
 
-      expect(n.Ship.c).toBe("Ship abc");
-      expect(n.Ship().c).toBe("Ship abc");
+      check(n.Ship, "Ship abc");
+      check(n.Ship(), "Ship abc");
 
-      expect(n.Ship.engine.c).toBe("Ship..engine def");
-      expect(n.Ship.engine().c).toBe("Ship..engine def");
+      check(n.Ship.engine, "Ship..engine def");
+      check(n.Ship.engine(), "Ship..engine def");
 
-      expect(n.Ship.part.c).toBe("Ship..part ghi");
-      expect(n.Ship.part().c).toBe("Ship..part ghi");
+      check(n.Ship.part, "Ship..part ghi");
+      check(n.Ship.part(), "Ship..part ghi");
 
-      expect(n.Ship.warp.c /*-------------*/).toBe("Ship abc Ship....warp jkl");
-      expect(n.Ship.warp().c /*-----------*/).toBe("Ship abc Ship....warp jkl");
-      expect(n.Ship.warp(true).c /*-------*/).toBe("Ship abc Ship....warp jkl");
-      expect(n.Ship.warp(false).c /*------*/).toBe("Ship abc");
+      check(n.Ship.warp, "Ship abc Ship....warp jkl");
+      check(n.Ship.warp(), "Ship abc Ship....warp jkl");
+      check(n.Ship.warp(true), "Ship abc Ship....warp jkl");
+      check(n.Ship.warp(false), "Ship abc");
 
-      expect(n.Ship.part.warp.c).toBe("Ship..part ghi Ship..part....warp jkl");
-      expect(n.Ship.part.warp().c).toBe(
-        "Ship..part ghi Ship..part....warp jkl"
-      );
-      expect(n.Ship.part.warp(true).c).toBe(
-        "Ship..part ghi Ship..part....warp jkl"
-      );
-      expect(n.Ship.part.warp(false).c).toBe("Ship..part ghi");
+      check(n.Ship.part.warp, "Ship..part ghi Ship..part....warp jkl");
+      check(n.Ship.part.warp(), "Ship..part ghi Ship..part....warp jkl");
+      check(n.Ship.part.warp(true), "Ship..part ghi Ship..part....warp jkl");
+      check(n.Ship.part.warp(false), "Ship..part ghi");
 
       nss.configure({
         elementSeparator: "__",
@@ -1332,59 +1062,53 @@ describe("NSS", () => {
 
       n = nss<typeof Base, typeof Elem, typeof Cond>(Base, Elem, Cond);
 
-      expect(n.c).toBe("Ship abc");
-      expect(n().c).toBe("Ship abc");
+      check(n, "Ship abc");
+      check(n(), "Ship abc");
 
-      expect(n.engine.c).toBe("Ship__engine def");
-      expect(n.engine().c).toBe("Ship__engine def");
+      check(n.engine, "Ship__engine def");
+      check(n.engine(), "Ship__engine def");
 
-      expect(n.part.c).toBe("Ship__part ghi");
-      expect(n.part().c).toBe("Ship__part ghi");
+      check(n.part, "Ship__part ghi");
+      check(n.part(), "Ship__part ghi");
 
-      expect(n.warp.c /*-------------*/).toBe("Ship abc Ship:::warp jkl");
-      expect(n.warp().c /*-----------*/).toBe("Ship abc Ship:::warp jkl");
-      expect(n.warp(true).c /*-------*/).toBe("Ship abc Ship:::warp jkl");
-      expect(n.warp(false).c /*------*/).toBe("Ship abc");
+      check(n.warp, "Ship abc Ship:::warp jkl");
+      check(n.warp(), "Ship abc Ship:::warp jkl");
+      check(n.warp(true), "Ship abc Ship:::warp jkl");
+      check(n.warp(false), "Ship abc");
 
-      expect(n.part.warp.c /*------*/).toBe(
-        "Ship__part ghi Ship__part:::warp jkl"
-      );
-      expect(n.part.warp().c /*------*/).toBe(
-        "Ship__part ghi Ship__part:::warp jkl"
-      );
-      expect(n.part.warp(true).c /*--*/).toBe(
-        "Ship__part ghi Ship__part:::warp jkl"
-      );
-      expect(n.part.warp(false).c /*-*/).toBe("Ship__part ghi");
+      check(n.part.warp, "Ship__part ghi Ship__part:::warp jkl");
+      check(n.part.warp(), "Ship__part ghi Ship__part:::warp jkl");
+      check(n.part.warp(true), "Ship__part ghi Ship__part:::warp jkl");
+      check(n.part.warp(false), "Ship__part ghi");
 
-      expect(n.Ship.c).toBe("Ship abc");
-      expect(n.Ship().c).toBe("Ship abc");
+      check(n.Ship, "Ship abc");
+      check(n.Ship(), "Ship abc");
 
-      expect(n.Ship.engine.c).toBe("Ship__engine def");
-      expect(n.Ship.engine().c).toBe("Ship__engine def");
+      check(n.Ship.engine, "Ship__engine def");
+      check(n.Ship.engine(), "Ship__engine def");
 
-      expect(n.Ship.part.c).toBe("Ship__part ghi");
-      expect(n.Ship.part().c).toBe("Ship__part ghi");
+      check(n.Ship.part, "Ship__part ghi");
+      check(n.Ship.part(), "Ship__part ghi");
 
-      expect(n.Ship.warp.c /*-------------*/).toBe("Ship abc Ship:::warp jkl");
-      expect(n.Ship.warp().c /*-----------*/).toBe("Ship abc Ship:::warp jkl");
-      expect(n.Ship.warp(true).c /*-------*/).toBe("Ship abc Ship:::warp jkl");
-      expect(n.Ship.warp(false).c /*------*/).toBe("Ship abc");
+      check(n.Ship.warp, "Ship abc Ship:::warp jkl");
+      check(n.Ship.warp(), "Ship abc Ship:::warp jkl");
+      check(n.Ship.warp(true), "Ship abc Ship:::warp jkl");
+      check(n.Ship.warp(false), "Ship abc");
 
-      expect(n.Ship.part.warp.c).toBe("Ship__part ghi Ship__part:::warp jkl");
-      expect(n.Ship.part.warp().c).toBe("Ship__part ghi Ship__part:::warp jkl");
-      expect(n.Ship.part.warp(true).c).toBe(
-        "Ship__part ghi Ship__part:::warp jkl"
-      );
-      expect(n.Ship.part.warp(false).c).toBe("Ship__part ghi");
+      check(n.Ship.part.warp, "Ship__part ghi Ship__part:::warp jkl");
+      check(n.Ship.part.warp(), "Ship__part ghi Ship__part:::warp jkl");
+      check(n.Ship.part.warp(true), "Ship__part ghi Ship__part:::warp jkl");
+      check(n.Ship.part.warp(false), "Ship__part ghi");
 
-      expect(n.Ship.part.warp().adrift.c).toBe(
+      check(
+        n.Ship.part.warp().adrift,
         "Ship__part ghi Ship__part:::warp jkl Ship__part:::adrift mno"
       );
-      expect(n.Ship.part.warp(0).adrift("at space").c).toBe(
+      check(
+        n.Ship.part.warp(0).adrift("at space"),
         "Ship__part ghi Ship__part:::adrift mno"
       );
-      expect(n.Ship.part.warp(false).adrift(false).c).toBe("Ship__part ghi");
+      check(n.Ship.part.warp(false).adrift(false), "Ship__part ghi");
     });
 
     test("reset", () => {
@@ -1394,23 +1118,23 @@ describe("NSS", () => {
 
       let n = nss<typeof Base, typeof Elem, typeof Cond>(Base, Elem, Cond);
 
-      expect(n.warp.c /*-------------*/).toBe("Ship abc Ship__warp jkl");
-      expect(n.warp().c /*-----------*/).toBe("Ship abc Ship__warp jkl");
-      expect(n.part.warp().c).toBe("Ship_part ghi Ship_part__warp jkl");
-      expect(n.part.warp(true).c).toBe("Ship_part ghi Ship_part__warp jkl");
-      expect(n.Ship.part.warp.c).toBe("Ship_part ghi Ship_part__warp jkl");
-      expect(n.Ship.part.warp(false).c).toBe("Ship_part ghi");
+      check(n.warp, "Ship abc Ship__warp jkl");
+      check(n.warp(), "Ship abc Ship__warp jkl");
+      check(n.part.warp(), "Ship_part ghi Ship_part__warp jkl");
+      check(n.part.warp(true), "Ship_part ghi Ship_part__warp jkl");
+      check(n.Ship.part.warp, "Ship_part ghi Ship_part__warp jkl");
+      check(n.Ship.part.warp(false), "Ship_part ghi");
 
       nss.configure(null);
 
       n = nss<typeof Base, typeof Elem, typeof Cond>(Base, Elem, Cond);
 
-      expect(n.warp.c /*-------------*/).toBe("Ship abc Ship--warp jkl");
-      expect(n.warp().c /*-----------*/).toBe("Ship abc Ship--warp jkl");
-      expect(n.part.warp().c).toBe("Ship-part ghi Ship-part--warp jkl");
-      expect(n.part.warp(true).c).toBe("Ship-part ghi Ship-part--warp jkl");
-      expect(n.Ship.part.warp.c).toBe("Ship-part ghi Ship-part--warp jkl");
-      expect(n.Ship.part.warp(false).c).toBe("Ship-part ghi");
+      check(n.warp, "Ship abc Ship--warp jkl");
+      check(n.warp(), "Ship abc Ship--warp jkl");
+      check(n.part.warp(), "Ship-part ghi Ship-part--warp jkl");
+      check(n.part.warp(true), "Ship-part ghi Ship-part--warp jkl");
+      check(n.Ship.part.warp, "Ship-part ghi Ship-part--warp jkl");
+      check(n.Ship.part.warp(false), "Ship-part ghi");
 
       nss.configure({
         elementSeparator: "__",
@@ -1419,23 +1143,23 @@ describe("NSS", () => {
 
       n = nss<typeof Base, typeof Elem, typeof Cond>(Base, Elem, Cond);
 
-      expect(n.warp.c /*-------------*/).toBe("Ship abc Ship:::warp jkl");
-      expect(n.warp().c /*-----------*/).toBe("Ship abc Ship:::warp jkl");
-      expect(n.part.warp().c).toBe("Ship__part ghi Ship__part:::warp jkl");
-      expect(n.part.warp(true).c).toBe("Ship__part ghi Ship__part:::warp jkl");
-      expect(n.Ship.part.warp.c).toBe("Ship__part ghi Ship__part:::warp jkl");
-      expect(n.Ship.part.warp(false).c).toBe("Ship__part ghi");
+      check(n.warp, "Ship abc Ship:::warp jkl");
+      check(n.warp(), "Ship abc Ship:::warp jkl");
+      check(n.part.warp(), "Ship__part ghi Ship__part:::warp jkl");
+      check(n.part.warp(true), "Ship__part ghi Ship__part:::warp jkl");
+      check(n.Ship.part.warp, "Ship__part ghi Ship__part:::warp jkl");
+      check(n.Ship.part.warp(false), "Ship__part ghi");
 
       nss.configure(null);
 
       n = nss<typeof Base, typeof Elem, typeof Cond>(Base, Elem, Cond);
 
-      expect(n.warp.c /*-------------*/).toBe("Ship abc Ship--warp jkl");
-      expect(n.warp().c /*-----------*/).toBe("Ship abc Ship--warp jkl");
-      expect(n.part.warp().c).toBe("Ship-part ghi Ship-part--warp jkl");
-      expect(n.part.warp(true).c).toBe("Ship-part ghi Ship-part--warp jkl");
-      expect(n.Ship.part.warp.c).toBe("Ship-part ghi Ship-part--warp jkl");
-      expect(n.Ship.part.warp(false).c).toBe("Ship-part ghi");
+      check(n.warp, "Ship abc Ship--warp jkl");
+      check(n.warp(), "Ship abc Ship--warp jkl");
+      check(n.part.warp(), "Ship-part ghi Ship-part--warp jkl");
+      check(n.part.warp(true), "Ship-part ghi Ship-part--warp jkl");
+      check(n.Ship.part.warp, "Ship-part ghi Ship-part--warp jkl");
+      check(n.Ship.part.warp(false), "Ship-part ghi");
     });
   });
 });
