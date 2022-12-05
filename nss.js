@@ -50,12 +50,10 @@ function toStringError() {
     throw new Error("Don't coerce to string directly; use .c (alias: .cls)");
 }
 function isNSSObject(n) {
-    var _a;
-    return ((_a = n) === null || _a === void 0 ? void 0 : _a.toString) === toStringError;
+    return (n === null || n === void 0 ? void 0 : n.toString) === toStringError;
 }
 function isBaseNSSObject(n) {
-    var _a;
-    return isNSSObject(n) && n === ((_a = n) === null || _a === void 0 ? void 0 : _a.parent);
+    return isNSSObject(n) && n === (n === null || n === void 0 ? void 0 : n.parent);
 }
 function isElemNSSObject(n) {
     var parent = n.parent;

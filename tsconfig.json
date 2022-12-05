@@ -1,14 +1,16 @@
 {
   "compilerOptions": {
-    "target": "es5",
     "strict": true,
-    "declaration": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "baseUrl": ".",
     "types": ["jest"],
-    "lib": ["esnext", "dom"],
-    "outDir": "."
+    "lib": ["esnext"],
+    "module": "esnext",
+    "moduleResolution": "node",
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "./dist"
   },
   "include": ["src/**/*.ts", "tests/**/*.ts"],
   "exclude": ["node_modules"]

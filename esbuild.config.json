@@ -1,0 +1,9 @@
+{
+  "entry": "./src/nss.ts",
+  "outfile": "./dist/nss.min.js",
+  "loader": { ".ts": "ts" },
+  "bundle": true,
+  "minify": true,
+  "format": "esm",
+  "target": "esnext"
+}
