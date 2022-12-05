@@ -4,6 +4,6 @@
   "loader": { ".ts": "ts" },
   "bundle": true,
   "minify": true,
-  "format": "esm",
+  "format": "cjs",
   "target": "esnext"
 }
