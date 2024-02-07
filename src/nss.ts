@@ -1,7 +1,5 @@
 export type NSS<Base, Elem, Cond> = {
   [key in keyof Base]: NSSBaseFunc<Base, Elem, Cond>;
-} & {
-  mapClasses: () => NSS<Base, Elem, Cond>;
 } & NSSBaseFunc<Base, Elem, Cond>;
 
 export type NSSObject<Base, Elem, Cond> = {
