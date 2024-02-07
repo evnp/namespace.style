@@ -1,7 +1,5 @@
 export type NSS<Base, Elem, Cond> = {
     [key in keyof Base]: NSSBaseFunc<Base, Elem, Cond>;
-} & {
-    mapClasses: () => NSS<Base, Elem, Cond>;
 } & NSSBaseFunc<Base, Elem, Cond>;
 export type NSSObject<Base, Elem, Cond> = {
     cls: string;
@@ -41,7 +39,8 @@ export type NSSConfig = {
 declare function isNSSObject(n: unknown): boolean;
 declare function isBaseNSSObject(n: unknown): boolean;
 declare function isElemNSSObject(n: unknown): boolean;
-export declare function isCondNSSObject(n: unknown): boolean;
+declare function isCondNSSObject(n: unknown): boolean;
+declare function getBaseNSSObjectName(n: unknown): string;
 declare function nss<Base = object, Elem = object, Cond = object>(name?: null | Record<keyof Base, string | number | boolean>, elem?: null | Record<keyof Elem, string | number | boolean>, cond?: null | Record<keyof Cond, string | number | boolean>, classMap?: null | NSSClassMap<Base, Elem, Cond> | ((classMap: NSSClassMap<Base, Elem, Cond>) => void | NSSClassMap<Base, Elem, Cond>)): NSS<Base, Elem, Cond>;
 declare namespace nss {
     var config: {
@@ -55,6 +54,7 @@ declare namespace nss {
     var isBase: typeof isBaseNSSObject;
     var isElem: typeof isElemNSSObject;
     var isCond: typeof isCondNSSObject;
+    var getName: typeof getBaseNSSObjectName;
 }
 export default nss;
 export declare function resolveNSSArg<Base, Elem, Cond>(builder: NSSObject<Base, Elem, Cond>, arg: string | NSSArg<Base, Elem, Cond>): string | null;

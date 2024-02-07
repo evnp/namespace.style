@@ -108,9 +108,29 @@ function isElemNSSObject(n: unknown) {
   return isBaseNSSObject(parent) && !isCondNSSObject(n);
 }
 
-export function isCondNSSObject(n: unknown) {
+function isCondNSSObject(n: unknown) {
   const { off } = n as { parent: unknown; off: boolean };
   return isNSSObject(n) && typeof off === "boolean";
+}
+
+function getBaseNSSObjectName(n: unknown) {
+  let baseObject: object;
+  if (isBaseNSSObject(n)) {
+    baseObject = n as object;
+  } else {
+    throw new Error(
+      "Only pass Name to nss.name, not Elem or Cond or any other value."
+    );
+  }
+  const keys = Object.keys(baseObject).filter(
+    (key) => `${parseInt(key)}` !== key
+    // eliminate any TS-generated enum reverse-mappings
+  );
+  const [name, ...rest] = keys;
+  if (!name || rest?.length) {
+    throw new Error("Name enum must have exactly one key.");
+  }
+  return name;
 }
 
 export default function nss<Base = object, Elem = object, Cond = object>(
@@ -634,3 +654,4 @@ nss.isInstance = isNSSObject;
 nss.isBase = isBaseNSSObject;
 nss.isElem = isElemNSSObject;
 nss.isCond = isCondNSSObject;
+nss.getName = getBaseNSSObjectName;
