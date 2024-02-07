@@ -228,7 +228,7 @@ $ git clone git@github.com:evnp/namespace.style.git
 $ cd namespace.style
 $ npm run repl
 
-> namespace.style@0.0.15 repl
+> namespace.style repl
 > node nss.repl.js
 
 > const n = nss({ Hello: true }, { World: true })
