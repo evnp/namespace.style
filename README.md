@@ -8,9 +8,7 @@ The missing, well-typed link between HTML and CSS.
   \/_/ \/_/  \/_____/  \/_____/  namespace.style
 ```
 
-[![latest release](https://img.shields.io/github/release/evnp/namespace.style.svg)](https://github.com/evnp/namespace.style/releases/latest)
 [![npm package](https://img.shields.io/npm/v/namespace.style.svg)](https://www.npmjs.com/package/namespace.style)
-[![license](https://img.shields.io/github/license/evnp/namespace.style.svg?color=blue)](https://github.com/evnp/namespace.style/blob/master/LICENSE.md)
 
 - Make element class names type-safe, typo-free, and autocompletable.
 - Make debugging DOM a dream – give everything a name you can actually understand. No generated hex soup.
@@ -39,7 +37,7 @@ A component is worth a thousand words. In this example, we'll use a Vue componen
 
 import nss from "namespace.style";
 import { css } from "astroturf";
-import { defineComponent } from "vue";
+import { defineComponent, computed } from "vue";
 
 // Enums define available NSS elememt classes, and provide a "map" of component
 // elements and conditional states that's useful as a reference at top of file:
@@ -62,13 +60,13 @@ export default defineComponent({
     inline: { type: Boolean, default: false },
   },
   setup(props) {
-    const Tag = props.ordered ? "ol" : "ul";
+    const Tag = computed(() => props.ordered ? "ol" : "ul");
     return () => (
-      <Tag class={n.Ordered(props.ordered).Inline(props.inline).c}>
+      <Tag.value class={n.Ordered(props.ordered).Inline(props.inline).c}>
         {items.map((item) => (
           <li class={n.Item.c}>{item}</li>
         })
-      </Tag>
+      </Tag.value>
     );
   }
 });
@@ -105,10 +103,10 @@ Let's break down the anatomy of NSS usage above, piece by piece.
 ```typescript
 import nss from "namespace.style";
 import { css } from "astroturf";
-import { defineComponent } from "vue";
+import { defineComponent, computed } from "vue";
 ```
 
-First we import the `nss` module as well as necessary Astroturf and Vue functions.
+First we import the `nss` module as well as necessary [Astroturf](https://github.com/astroturfcss/astroturf) and Vue functions.
 
 ```typescript
 // Enums define available NSS elememt classes, and provide a "map" of component
@@ -154,13 +152,13 @@ These are standard Vue prop declarations.
 
 ```typescript
   setup(props) {
-    const Tag = props.ordered ? "ol" : "ul";
+    const Tag = computed(() => props.ordered ? "ol" : "ul");
     return () => (
-      <Tag class={n.Ordered(props.ordered).Inline(props.inline).c}>
+      <Tag.value class={n.Ordered(props.ordered).Inline(props.inline).c}>
         {items.map((item) => (
           <li class={n.item.c}>{item}</li>
         })
-      </Tag>
+      </Tag.value>
     );
   }
 });
@@ -209,7 +207,7 @@ export const n = nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond, ()
   return { SpecialList, Item, Ordered, Inline };
 });
 ```
-Finally, we have our CSS-in-JS setup using Astroturf. The NSS class management system can be used _without_ CSS-in-JS, in which case the NSS declaration would look much simpler:
+Finally, we have our CSS-in-JS setup using [Astroturf](https://github.com/astroturfcss/astroturf). The NSS class management system can be used _without_ CSS-in-JS, in which case the NSS declaration would look much simpler:
 ```typescript
 export const n = nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond);
 ```
@@ -217,7 +215,7 @@ You'd use the `n` object in the exact same way in your template code. In this sh
 
 We `export const n` here so that it can be imported in test code as a type-aware source of element selectors. The export is only necessary if you want to use NSS externally from the component though.
 
-There are many ways to map styles to NSS elements. The function which we're passing to `nss` above is one way – Astroturf generates vars containing unique class strings within it, and we return a mapping of NSS keys to these unique class strings. Instead of a function, you could also pass a simple object mapping here, or you could just use NSS classes directly within your styles – they're extremely human-readable.
+There are many ways to map styles to NSS elements. The function which we're passing to `nss` above is one way – [Astroturf](https://github.com/astroturfcss/astroturf) generates vars containing unique class strings within it, and we return a mapping of NSS keys to these unique class strings. Instead of a function, you could also pass a simple object mapping here, or you could just use NSS classes directly within your styles – they're extremely human-readable.
 
 More docs are coming soon, until then please refer to NSS's extensive test cases for more usage examples:
 https://github.com/evnp/namespace.style/blob/main/test/nss.test.ts
