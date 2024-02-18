@@ -63,9 +63,9 @@ export default defineComponent({
     const Tag = computed(() => props.ordered ? "ol" : "ul");
     return () => (
       <Tag.value class={n.Ordered(props.ordered).Inline(props.inline).c}>
-        {items.map((item) => (
+        {props.items.map((item) => (
           <li class={n.Item.c}>{item}</li>
-        })
+        ))}
       </Tag.value>
     );
   }
@@ -81,10 +81,10 @@ export const n = nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond, ()
   const Item = css``; // it's fine to leave these empty; used below within selectors
   const SpecialList = css`
     margin: 1rem;
-    &${inline} ${item} {
+    &${Inline} ${Item} {
       display: inline;
     }
-    &:not(${inline}) ${item} {
+    &:not(${Inline}) ${Item} {
       margin: 0.5rem;
     }
     @media screen and (max-width: 600px) {
@@ -155,9 +155,9 @@ These are standard Vue prop declarations.
     const Tag = computed(() => props.ordered ? "ol" : "ul");
     return () => (
       <Tag.value class={n.Ordered(props.ordered).Inline(props.inline).c}>
-        {items.map((item) => (
+        {props.items.map((item) => (
           <li class={n.item.c}>{item}</li>
-        })
+        ))}
       </Tag.value>
     );
   }
@@ -191,10 +191,10 @@ export const n = nss<typeof Name, typeof Elem, typeof Cond>(Name, Elem, Cond, ()
   const Item = css``; // it's fine to leave these empty; used below within selectors
   const SpecialList = css`
     margin: 1rem;
-    &${inline} ${item} {
+    &${Inline} ${Item} {
       display: inline;
     }
-    &:not(${inline}) ${item} {
+    &:not(${Inline}) ${Item} {
       margin: 0.5rem;
     }
     @media screen and (max-width: 600px) {
